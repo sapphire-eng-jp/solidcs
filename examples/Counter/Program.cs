@@ -40,51 +40,59 @@ class Program
             Width = 512,
         };
 
-        var stack = new StackPanel();
 
-        var button = new Button
-        {
-            Content = "Press Me!",
-            FontSize = 24,
-            HorizontalAlignment = HorizontalAlignment.Center,
-        };
-
-        button.Click += (object? sender, RoutedEventArgs args) => count.Value += 1;
-
+        var button = new SButton(() => count.Value += 1);
         var label = new SLabel(() => $"Count = {count.Value}");
         var label2 = new SLabel(() => "Hello World");
 
-        stack.Children.Add(label.GetControl());
-        stack.Children.Add(label2.GetControl());
-        stack.Children.Add(button);
-        win.Content = stack;
+        var stack = new SStackPanel([label, label2, button]);
+
+        win.Content = stack.GetControl();
 
         win.Show();
         app.Run(win);
     }
 
-    interface IComponent
+    abstract class Component
     {
-        public Control GetControl();
+        public abstract Control GetControl();
     }
 
-    class SStackLabel : IComponent
+    class SStackPanel : Component
     {
         private StackPanel _stack;
 
-        public SStackLabel(List<IComponent> children)
+        public SStackPanel(List<Component> children)
         {
             _stack = new StackPanel();
             children.ForEach((x) => _stack.Children.Add(x.GetControl()));
         }
 
-        public Control GetControl()
+        public override Control GetControl()
         {
             return _stack;
         }
     }
 
-    class SLabel : IComponent
+    class SButton : Component
+    {
+        private Button _button;
+
+        public SButton(Action onClick)
+        {
+            _button = new Button
+            {
+                Content = "Press Me!",
+                FontSize = 24,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            _button.Click += (object? sender, RoutedEventArgs args) => onClick();
+        }
+
+        public override Control GetControl() => _button;
+    }
+
+    class SLabel : Component
     {
         public Func<string> ContentFunc {get;}
 
@@ -102,6 +110,6 @@ class Program
             );
         }
 
-        public Control GetControl() => _label;
+        public override Control GetControl() => _label;
     }
 }
