@@ -9,16 +9,13 @@ public sealed class Context
 
     public Stack<Action> Subscribers {get;} = new();
 
-    private readonly System.Threading.Lock _lock = new();
+    public System.Threading.Lock Lock {get;} = new();
 
     public void RegisterEffect(Action subscriber)
     {
-        lock(_lock) 
-        {
-            Instance.Subscribers.Push(subscriber);
-            subscriber();
-            Instance.Subscribers.Pop();
-        }
+        Instance.Subscribers.Push(subscriber);
+        subscriber();
+        Instance.Subscribers.Pop();
     }
 
     private Context()

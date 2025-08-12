@@ -13,31 +13,37 @@ public class ContextTests
         Assert.Equal(ctx1, ctx2);
     }
 
-    /*[Fact]
+    [Fact]
     public void PushPopTest()
     {
         var ctx = Context.Instance;
-        ctx.Subscribers.Push(() => Console.WriteLine("HW"));
+        lock(ctx.Lock)
+        {
+            ctx.Subscribers.Push(() => Console.WriteLine("HW"));
 
-        var action = Context.Instance.Subscribers.Pop();
-        action();
+            var action = Context.Instance.Subscribers.Pop();
+            action();
 
-        Assert.Empty(ctx.Subscribers);
-    }*/
+            Assert.Empty(ctx.Subscribers);
+        }
+    }
 
-    /*[Fact]
+    [Fact]
     public void ClosureTest()
     {
         var a = 2;
         var b = 0;
 
         var ctx = Context.Instance;
-        ctx.Subscribers.Push(() => 
-                { b = a * 2; }
-        );
-        ctx.Subscribers.Pop()();
+        lock(ctx.Lock)
+        {
+            ctx.Subscribers.Push(() => 
+                    { b = a * 2; }
+            );
+            ctx.Subscribers.Pop()();
+        }
         Assert.Equal(4, b);
-    }*/
+    }
 
     [Fact]
     void RegisterEffectTest()
@@ -46,13 +52,16 @@ public class ContextTests
         var b = 0;
 
         var ctx = Context.Instance;
-        ctx.RegisterEffect(() =>
+        lock(ctx.Lock)
         {
-            b = a;
-        });
+            ctx.RegisterEffect(() =>
+            {
+                b = a;
+            });
 
-        Assert.Equal(2, b);
-        //Assert.Empty(ctx.Subscribers);
+            Assert.Equal(2, b);
+            Assert.Empty(ctx.Subscribers);
+        }
 
     }
 }

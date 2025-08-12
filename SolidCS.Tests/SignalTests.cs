@@ -23,9 +23,12 @@ public class SignalTests
             result = s.Value;
             Console.WriteLine(result);
         };
-        ctx.Subscribers.Push(func);
-        func();
-        ctx.Subscribers.Pop();
+        lock(ctx.Lock)
+        {
+            ctx.Subscribers.Push(func);
+            func();
+            ctx.Subscribers.Pop();
+        }
 
         s.Value = 10;
 
@@ -38,9 +41,12 @@ public class SignalTests
         var s = new Signal<int>(1);
         var result = 0;
 
-        Context.Instance.RegisterEffect(
-                () => result = s.Value
-                );
+        lock(Context.Instance.Lock)
+        {
+            Context.Instance.RegisterEffect(
+                    () => result = s.Value
+                    );
+        }
         Assert.Equal(1, result);
         s.Value = 10;
         Assert.Equal(10, result);

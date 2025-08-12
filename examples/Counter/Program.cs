@@ -39,7 +39,11 @@ class Program
             Width = 512,
         };
 
-        win.Content = new Counter().GetControl();
+        // UI構築はlockして行う
+        lock(Context.Instance.Lock)
+        {
+            win.Content = new Counter().GetControl();
+        }
 
         win.Show();
         app.Run(win);
