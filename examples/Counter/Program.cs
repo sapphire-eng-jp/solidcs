@@ -28,7 +28,6 @@ class Program
 
     public static void AppMain(Application app, string[] args)
     {
-        var count = new Signal<int>(0);
 
         app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
         app.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
@@ -40,22 +39,39 @@ class Program
             Width = 512,
         };
 
-
-        var button = new SButton(() => count.Value += 1);
-        var label = new SLabel(() => $"Count = {count.Value}");
-        var label2 = new SLabel(() => "Hello World");
-
-        var stack = new SStackPanel([label, label2, button]);
-
-        win.Content = stack.GetControl();
+        win.Content = new Counter().GetControl();
 
         win.Show();
         app.Run(win);
     }
 
+    class Counter : Component
+    {
+        private SStackPanel _panel;
+        private Signal<int> count;
+
+        public Counter()
+        {
+            count = new Signal<int>(0);
+
+            var button = new SButton(() => count.Value += 1);
+            var label = SLabel(() => $"Count = {count.Value}");
+            var label2 = SLabel(() => "Hello World");
+
+            _panel = new SStackPanel([label, label2, button]);
+        }
+
+        public override Control GetControl() => _panel.GetControl();
+    }
+
     abstract class Component
     {
         public abstract Control GetControl();
+
+        protected static SLabel SLabel(Func<string> _contentFunc)
+        {
+            return new SLabel(_contentFunc);
+        }
     }
 
     class SStackPanel : Component
