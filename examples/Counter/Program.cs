@@ -42,11 +42,26 @@ class Program
         // UI構築はlockして行う
         lock(Context.Instance.Lock)
         {
-            win.Content = new Counter().GetControl();
+            //win.Content = new Counter().GetControl();
+            win.Content = Counter2.New().GetControl();
         }
 
         win.Show();
         app.Run(win);
+    }
+
+    static class Counter2
+    {
+        public static Component New()
+        {
+            var count = new Signal<int>(0);
+
+            var button = new SButton(() => count.Value += 1);
+            var label = new SLabel(() => $"Count = {count.Value}");
+            var label2 = new SLabel(() => "Hello World");
+
+            return new SStackPanel([label, label2, button]);
+        }
     }
 
     class Counter : Component
@@ -58,11 +73,11 @@ class Program
         {
             count = new Signal<int>(0);
 
-            var button = new SButton(() => count.Value += 1);
+            var button = SButton(() => count.Value += 1);
             var label = SLabel(() => $"Count = {count.Value}");
             var label2 = SLabel(() => "Hello World");
 
-            _panel = new SStackPanel([label, label2, button]);
+            _panel = SStackPanel([label, label2, button]);
         }
 
         public override Control GetControl() => _panel.GetControl();
@@ -75,6 +90,16 @@ class Program
         protected static SLabel SLabel(Func<string> _contentFunc)
         {
             return new SLabel(_contentFunc);
+        }
+
+        protected static SButton SButton(Action _onClick)
+        {
+            return new SButton(_onClick);
+        }
+
+        protected static SStackPanel SStackPanel(List<Component> _children)
+        {
+            return new SStackPanel(_children);
         }
     }
 
