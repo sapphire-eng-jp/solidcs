@@ -11,8 +11,9 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 - `SolidCS/` — コアライブラリ (net9.0, nullable enable)。`Signal<T>`、`Context`、`Effect` の 3 ファイルで構成される。UI 非依存。
 - `SolidCS.Avalonia/` — Avalonia 11.3.2 ラッパーライブラリ (net9.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネントを `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` と `Avalonia` パッケージを ProjectReference / PackageReference。
 - `SolidCS.Tests/` — xUnit テスト (net9.0)。`SolidCS` を ProjectReference。
-- `examples/Counter/` — Avalonia 11.3.2 製サンプル (`PublishAot=true`, `WinExe`)。`SolidCS.Avalonia` の使い方のリファレンス実装。
-- `SolidCS.sln` — 上記 4 プロジェクトを束ねる。`examples` は solution folder 配下。
+- `examples/Counter/` — Avalonia 11.3.2 製サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ。
+- `examples/Form/` — 同じく Avalonia 11.3.2 製サンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。
+- `SolidCS.sln` — 上記 5 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
 
@@ -22,7 +23,8 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 dotnet build SolidCS.sln                                   # ソリューション全体をビルド
 dotnet test SolidCS.Tests                                  # 全テスト実行
 dotnet test SolidCS.Tests --filter "FullyQualifiedName~SignalTests.SubscribeTest"   # 単一テスト
-dotnet run --project examples/Counter                      # Avalonia サンプル起動
+dotnet run --project examples/Counter                      # Counter サンプル起動
+dotnet run --project examples/Form                         # Form サンプル起動 (TextBox/CheckBox の双方向バインド確認)
 dotnet publish examples/Counter -c Release                 # サンプルを AOT で発行
 ```
 
@@ -48,8 +50,18 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 
 - `Component.cs` — `abstract class Component : IDisposable`。`GetControl()` で内部の `Avalonia.Controls.Control` を返す。すべてのラッパーはこれを継承する。
 - `Label.cs` — `Func<string> contentFunc` を受け取って `Context.Instance.RegisterEffect(() => _label.Content = contentFunc())` を呼ぶ。effect 内で読まれた Signal が変わると Label が自動更新される。`Dispose()` で effect を解放。第 2 引数で `HorizontalAlignment` を渡せる (デフォルト `Center`)。
+- `TextBlock.cs` — Label の TextBlock 版。表示専用テキストでは Label の `Content` (object) より TextBlock の `Text` (string) の方が軽量で素直なのでこちらを使う。API は Label と同じ。
 - `Button.cs` — `Func<string> contentFunc` と `Action onClick` を受け取り、Content は Label と同じく effect でリアクティブに更新する。第 3 引数で `HorizontalAlignment` を渡せる (デフォルト `Center`)。
+- `TextBox.cs` — `Signal<string> value` を受け取り、**双方向バインド**する。effect で Signal → UI、`TextChanged` ハンドラで UI → Signal。Signal の setter の equality check で循環が止まるので effect 経由の代入が引き起こす TextChanged のエコーは無限ループにならない。デフォルト `HorizontalAlignment` は `Stretch` (入力欄は幅いっぱい使う想定)。
+- `CheckBox.cs` — `Signal<bool> value` と `Func<string> contentFunc` を受け取り、value は双方向バインド、content はリアクティブ表示。`IsChecked` は `bool?` (Indeterminate あり) だが Signal<bool> に丸めるため `?? false`。イベントは `ToggleButton.IsCheckedChanged`。
 - `StackPanel.cs` — `Component` のコンテナ。`IEnumerable<Component>` 実装 + `Add(Component)` メソッドにより collection initializer 構文 (`new StackPanel { childA, childB }`) で子要素を渡せる。コンストラクタ引数で `Orientation` を渡せる (デフォルト `Vertical`)。`Dispose()` は全ての子に伝播する。
+
+双方向バインドコンポーネント (`TextBox`, `CheckBox`) を新しく足すときは以下のパターンを踏襲:
+
+1. コンストラクタで `Signal<T> value` を受け取る。
+2. `Context.Instance.RegisterEffect(() => _control.Prop = value.Value)` で Signal → UI を貼る。
+3. Avalonia 側の changed イベント (`TextChanged`, `IsCheckedChanged` 等) で `value.Value = _control.Prop` を書く。
+4. 無限ループ防止は `Signal<T>.Value` setter の `EqualityComparer<T>.Default.Equals` に頼る (effect 経由で同値が書かれた場合 setter は何もしない)。Avalonia 側もたいてい同値代入では change event を発火しないので二重に守られる。
 
 props 化方針: **状態系** (Content など値が時間で変わるもの) は `Func<T>` でリアクティブに受ける。**構造系** (Orientation, HorizontalAlignment など滅多に切り替わらないもの) は素の型のオプション引数で静的に受ける。**見た目系** (Foreground, FontSize, Background など) は現状ハードコードだが、将来は Avalonia の Style system / 専用 Style プロパティでまとめて当てる方向で考える (個別 props 化は API がふくらむので避ける)。
 

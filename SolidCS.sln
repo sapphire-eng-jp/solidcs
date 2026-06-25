@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Counter", "examples\Counter
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidCS.Avalonia", "SolidCS.Avalonia\SolidCS.Avalonia.csproj", "{2BABEF67-28CD-4C4C-9141-180A238E5F58}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Form", "examples\Form\Form.csproj", "{02D50DC4-90D4-4984-9650-622A3956BC0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,11 +73,24 @@ Global
 		{2BABEF67-28CD-4C4C-9141-180A238E5F58}.Release|x64.Build.0 = Release|Any CPU
 		{2BABEF67-28CD-4C4C-9141-180A238E5F58}.Release|x86.ActiveCfg = Release|Any CPU
 		{2BABEF67-28CD-4C4C-9141-180A238E5F58}.Release|x86.Build.0 = Release|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Debug|x64.Build.0 = Debug|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Debug|x86.Build.0 = Debug|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|x64.ActiveCfg = Release|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|x64.Build.0 = Release|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|x86.ActiveCfg = Release|Any CPU
+		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1F03D305-DCA3-41EF-A142-3AEFC49B6501} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
+		{02D50DC4-90D4-4984-9650-622A3956BC0F} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 EndGlobal
