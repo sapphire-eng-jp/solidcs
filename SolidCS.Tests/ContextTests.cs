@@ -17,15 +17,12 @@ public class ContextTests
     public void PushPopTest()
     {
         var ctx = Context.Instance;
-        lock(ctx.Lock)
-        {
-            ctx.Subscribers.Push(new Effect(() => Console.WriteLine("HW")));
+        ctx.Subscribers.Push(new Effect(() => Console.WriteLine("HW")));
 
-            var effect = Context.Instance.Subscribers.Pop();
-            effect.Run();
+        var effect = Context.Instance.Subscribers.Pop();
+        effect.Run();
 
-            Assert.Empty(ctx.Subscribers);
-        }
+        Assert.Empty(ctx.Subscribers);
     }
 
     [Fact]
@@ -35,11 +32,9 @@ public class ContextTests
         var b = 0;
 
         var ctx = Context.Instance;
-        lock(ctx.Lock)
-        {
-            ctx.Subscribers.Push(new Effect(() => { b = a * 2; }));
-            ctx.Subscribers.Pop().Run();
-        }
+        ctx.Subscribers.Push(new Effect(() => { b = a * 2; }));
+        ctx.Subscribers.Pop().Run();
+
         Assert.Equal(4, b);
     }
 
@@ -50,17 +45,13 @@ public class ContextTests
         var b = 0;
 
         var ctx = Context.Instance;
-        lock(ctx.Lock)
+        ctx.RegisterEffect(() =>
         {
-            ctx.RegisterEffect(() =>
-            {
-                b = a;
-            });
+            b = a;
+        });
 
-            Assert.Equal(2, b);
-            Assert.Empty(ctx.Subscribers);
-        }
-
+        Assert.Equal(2, b);
+        Assert.Empty(ctx.Subscribers);
     }
 }
 

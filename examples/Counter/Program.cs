@@ -39,14 +39,10 @@ class Program
             Width = 512,
         };
 
-        // UI構築はlockして行う
-        Component root;
-        lock(Context.Instance.Lock)
-        {
-            //root = new Counter();
-            root = Counter2.New();
-            win.Content = root.GetControl();
-        }
+        // Context.Subscribers は AsyncLocal で論理フローごとに分離されているので、ここでのロックは不要。
+        //var root = new Counter();
+        var root = Counter2.New();
+        win.Content = root.GetControl();
 
         win.Closed += (_, _) => root.Dispose();
 

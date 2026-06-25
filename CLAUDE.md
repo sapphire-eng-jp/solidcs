@@ -8,7 +8,7 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 
 ## ソリューション構成
 
-- `SolidCS/` — コアライブラリ (net9.0, nullable enable)。`Signal<T>` と `Context` のみで構成される。
+- `SolidCS/` — コアライブラリ (net9.0, nullable enable)。`Signal<T>`、`Context`、`Effect` の 3 ファイルで構成される。
 - `SolidCS.Tests/` — xUnit テスト (net9.0)。`SolidCS` を ProjectReference。
 - `examples/Counter/` — Avalonia 11.3.2 製サンプル (`PublishAot=true`, `WinExe`)。`SolidCS` の使い方のリファレンス実装。
 - `SolidCS.sln` — 上記 3 プロジェクトを束ねる。`examples` は solution folder 配下。
@@ -27,20 +27,19 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 
 ## コアアーキテクチャ
 
-リアクティビティは `SolidCS/Signal.cs` と `SolidCS/Context.cs` の 2 ファイルだけで成立しており、依存関係はないので両方読めば全体を把握できる。要点は以下:
+リアクティビティは `SolidCS/Signal.cs` / `Context.cs` / `Effect.cs` の 3 ファイルで成立しており、依存関係はないので全部読めば把握できる。要点は以下:
 
-- `Context` はプロセス全体で 1 つの **singleton** (`Context.Instance`)。`Stack<Action> Subscribers` に「現在登録中の effect」を積み、`Signal<T>.Value` の getter がそのスタックの先頭を覗いて自分の購読者リストに追加する。これが依存追跡の本体。
-- `Context.RegisterEffect(Action)` は `Subscribers.Push → 実行 → Pop` の 1 セット。effect 内で読まれた Signal だけが追跡される。
-- `Signal<T>.Value` の getter は `try/catch` で例外を握りつぶす。これは「Subscribers スタックが空 (= effect 外で読まれている)」場合に `Peek()` が投げるのを許容する意図。`catch` を消すと壊れる。
-- `Signal<T>.Value` の setter は `EqualityComparer<T>.Default` で前値と一致した場合は通知をスキップする。
+- `Context` はプロセス全体で 1 つの **singleton** (`Context.Instance`)。`AsyncLocal<Stack<Effect>> Subscribers` に「現在登録中の effect」を積み、`Signal<T>.Value` の getter がそのスタックの先頭を `TryPeek` して自分の購読者リストに追加する。これが依存追跡の本体。
+- `Context.RegisterEffect(Action)` は `Effect` を 1 つ作って `effect.Run()` を呼ぶだけ。Push/Pop と依存の張り替えは `Effect.Run()` の責務。
+- `Effect.Run()` は (1) 前回の購読を `Untrack()` で全部解除、(2) 自分を Subscribers に Push、(3) コールバックを実行、(4) finally で Pop、という 1 セット。これにより条件分岐で読まれる Signal が変わっても依存が再追跡される。`_disposed` 中はノーオペ。
+- `Signal<T>.Value` の getter は `Context.Instance.Subscribers.TryPeek` で現在の Effect を取り、`_subscribers` (HashSet) に追加。同時に effect 側に「自分を購読者リストから外す」cleanup を仕込んで、次の `Run()` 冒頭の `Untrack()` で解除されるようにする。
+- `Signal<T>.Value` の setter は `EqualityComparer<T>.Default` で前値と一致した場合は通知をスキップ。購読者がいる場合は `_subscribers.ToArray()` でスナップショットを取ってから反復する (通知中に effect が _subscribers を変更してもコレクション変更例外にならない)。
 
-### Context.Lock を必ず取るという規約
+### Subscribers スタックは AsyncLocal で隔離される
 
-`Context.Instance.Lock` が公開されているのは、`Subscribers` スタックがシングルトンの可変状態なので、UI 構築や effect 登録のような **Subscribers を Push/Pop する処理は外側で `lock(Context.Instance.Lock)` する** という前提があるため (コミット `cea228e` で導入)。これは Signal.cs 内のコメント (#16–18) で明文化されている:
+`Context.Subscribers` は `AsyncLocal<Stack<Effect>>` で保持されていて、論理フロー (UI スレッド / 一つの async chain) ごとに別インスタンスを持つ。これにより effect 登録時の外側ロックは不要 — Subscribers スタックが他の論理フローと共有されないので Push/Pop が衝突しない。前提として **Signal の読み書きは単一の論理フロー内で完結させる** こと (Avalonia の UI スレッド制約とそのまま噛み合う)。別スレッドから Signal を書きたい場合は `Dispatcher.UIThread.Post` 等でマーシャリングする。
 
-> UI 構築処理全体を Lock する。UI スレッドはシングル前提で良いらしいのでこのままで。
-
-破ると複数スレッドからの effect 登録時に Subscribers スタックが壊れる。テスト (`SolidCS.Tests/SignalTests.cs`, `ContextTests.cs`) も `examples/Counter/Program.cs` の `AppMain` も、`Subscribers` に触る前に必ず `lock(ctx.Lock) { ... }` で囲んでいる — 同じパターンを踏襲すること。
+履歴メモ: 以前は `Context.Lock` を公開して呼び元が `lock(ctx.Lock) { ... }` で囲う規約だった (コミット `cea228e`)。AsyncLocal 化でその規約は撤廃されている。
 
 ### Avalonia 連携の流れ (Counter サンプル)
 

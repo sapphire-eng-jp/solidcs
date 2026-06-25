@@ -2,8 +2,8 @@ namespace SolidCS;
 
 public sealed class Signal<T>(T initValue)
 {
-    // UI構築処理全体をlock(Context.Instance.Lock)で囲う前提で、Subscribersへのアクセスは
-    // UIスレッドのみという想定。動的にUIを追加する場合も同じlock規約で守る。
+    // Signal の読み書きは単一の論理フロー (UI スレッドや一つの async chain) 内で完結させる前提。
+    // 別スレッドから書く場合は呼び元で Dispatcher 経由などにマーシャリングすること。
     private readonly HashSet<Effect> _subscribers = new();
 
     private T _value = initValue;
@@ -28,6 +28,8 @@ public sealed class Signal<T>(T initValue)
             }
 
             _value = value;
+
+            if (_subscribers.Count == 0) return;
 
             // 通知中にeffectが新しい購読を足してもコレクション変更例外にならないようスナップショットで反復する。
             foreach (var effect in _subscribers.ToArray())
