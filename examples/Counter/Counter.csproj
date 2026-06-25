@@ -23,5 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\SolidCS\SolidCS.csproj" />
+    <ProjectReference Include="..\..\SolidCS.Avalonia\SolidCS.Avalonia.csproj" />
   </ItemGroup>
 </Project>

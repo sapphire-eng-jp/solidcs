@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-SolidJS 風の Signal / Effect ベースのリアクティブプリミティブを C# で実装した実験プロジェクト。`SolidCS` 本体は UI フレームワーク非依存で、`examples/Counter` で Avalonia と組み合わせて使う方法を示している。
+SolidJS 風の Signal / Effect ベースのリアクティブプリミティブを C# で実装した実験プロジェクト。`SolidCS` 本体は UI フレームワーク非依存のリアクティブコア、`SolidCS.Avalonia` がそのコアの上に Avalonia 用 UI コンポーネントをラップして提供する小さな GUI フレームワーク、`examples/Counter` がそれらを利用するリファレンス実装、という三層構成。
 
 ## ソリューション構成
 
-- `SolidCS/` — コアライブラリ (net9.0, nullable enable)。`Signal<T>`、`Context`、`Effect` の 3 ファイルで構成される。
+- `SolidCS/` — コアライブラリ (net9.0, nullable enable)。`Signal<T>`、`Context`、`Effect` の 3 ファイルで構成される。UI 非依存。
+- `SolidCS.Avalonia/` — Avalonia 11.3.2 ラッパーライブラリ (net9.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネントを `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` と `Avalonia` パッケージを ProjectReference / PackageReference。
 - `SolidCS.Tests/` — xUnit テスト (net9.0)。`SolidCS` を ProjectReference。
-- `examples/Counter/` — Avalonia 11.3.2 製サンプル (`PublishAot=true`, `WinExe`)。`SolidCS` の使い方のリファレンス実装。
-- `SolidCS.sln` — 上記 3 プロジェクトを束ねる。`examples` は solution folder 配下。
+- `examples/Counter/` — Avalonia 11.3.2 製サンプル (`PublishAot=true`, `WinExe`)。`SolidCS.Avalonia` の使い方のリファレンス実装。
+- `SolidCS.sln` — 上記 4 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
 
@@ -41,14 +42,54 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 
 履歴メモ: 以前は `Context.Lock` を公開して呼び元が `lock(ctx.Lock) { ... }` で囲う規約だった (コミット `cea228e`)。AsyncLocal 化でその規約は撤廃されている。
 
-### Avalonia 連携の流れ (Counter サンプル)
+### SolidCS.Avalonia の構成
 
-`examples/Counter/Program.cs` には 2 種類のコンポーネント定義スタイルが同居している:
+`SolidCS.Avalonia` は以下のファイルで成立している:
 
-- **クラス継承スタイル** (`class Counter : Component`) — 従来型。コンストラクタで子要素を組み立てる。
-- **関数ファクトリスタイル** (`static class Counter2 { static Component New() { ... } }`, コミット `d76f627`) — `Component` を返す static メソッドで宣言する SolidJS 風。`AppMain` ではこちらを使用中 (旧スタイルはコメントアウトで残してある)。
+- `Component.cs` — `abstract class Component : IDisposable`。`GetControl()` で内部の `Avalonia.Controls.Control` を返す。すべてのラッパーはこれを継承する。
+- `Label.cs` — `Func<string>` を受け取って `Context.Instance.RegisterEffect(() => _label.Content = contentFunc())` を呼ぶ。effect 内で読まれた Signal が変わると Label が自動更新される。`Dispose()` で effect を解放。
+- `Button.cs` — `Action onClick` を受け取って Avalonia `Button.Click` に繋げるだけのラッパー。今のところ Content は固定文字列 (将来 props 化したいところ)。
+- `StackPanel.cs` — `Component` のコンテナ。`IEnumerable<Component>` 実装 + `Add(Component)` メソッドにより collection initializer 構文 (`new StackPanel { childA, childB }`) で子要素を渡せる。`Dispose()` は全ての子に伝播する。
 
-リアクティブな UI 更新は `SLabel` のコンストラクタが `Context.Instance.RegisterEffect(() => _label.Content = ContentFunc())` を呼ぶことで実現している — effect 内で `count.Value` を読むので、count が変わるたびに同じラムダが再実行され Label が更新される。新しいリアクティブ UI コントロールを足すときは、このパターン (コンストラクタで `RegisterEffect` を呼んで自身のプロパティを Signal から計算する) を踏襲する。
+ラッパー実装ファイル内では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。これは自身のクラス名 (`Label`, `Button`, `StackPanel`) と `Avalonia.Controls` 配下の同名型が衝突して `using Avalonia.Controls;` を素直に書けないため。新しいラッパーを足すときも同じ流儀を踏襲すること。
+
+### ライブラリユーザーがコンポーネントを書くスタイル
+
+`examples/Counter/Program.cs` の `Counter()` がリファレンス。`Component` を継承するのはライブラリ作者 (`Label` 等を作る側) で、ライブラリ利用者は **`Component` を返す関数** で UI を組み立てる SolidJS 風スタイルを取る:
+
+```csharp
+using SolidCS;
+using SolidCS.Avalonia;
+
+static Component Counter()
+{
+    var count = new Signal<int>(0);
+    return new StackPanel
+    {
+        new Label(() => $"Count = {count.Value}"),
+        new Button(() => count.Value += 1),
+    };
+}
+```
+
+ルートで作った `Component` の `GetControl()` を `Window.Content` に渡し、`Window.Closed` で `root.Dispose()` を呼ぶ — これで全 effect が解放される (Dispose は子コンポへ再帰的に伝播する)。
+
+利用側のサンプル (Counter) は Avalonia の `Window` / `Application.Run` extension を生で触る関係で `using Avalonia.Controls;` を書くと `Label` / `Button` / `StackPanel` が `SolidCS.Avalonia` 側と曖昧参照になる。回避策として Counter サンプルでは:
+
+- `Window` などの Avalonia 型を `global::Avalonia.Controls.Window` 形式で完全修飾する
+- `app.Run(win)` を解決するために `using static Avalonia.Controls.DesktopApplicationExtensions;` を入れる (型は import されないので衝突しない)
+
+将来 `SolidCS.Avalonia.Window` も用意したらこの完全修飾は消える想定。
+
+### リアクティブ UI コンポーネントを新しく追加するパターン
+
+新しいラッパー (例えば `STextBox` や `SCheckBox`) を `SolidCS.Avalonia` に足すときは以下を踏襲する:
+
+1. `Component` を継承する。
+2. コンストラクタ内で Avalonia の Control を生成。
+3. リアクティブに更新したいプロパティごとに `Context.Instance.RegisterEffect(() => _control.Prop = func())` を呼び、戻り値の `IDisposable` をフィールドに保持する。
+4. `GetControl()` で生成した Control を返す。
+5. `Dispose()` ですべての effect を解放する (コンテナ系の場合はさらに子へ Dispose を伝播)。
 
 ## 既知のゴミ
 
