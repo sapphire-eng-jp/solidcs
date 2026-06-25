@@ -1,21 +1,27 @@
-using Avalonia.Layout;
-
 namespace SolidCS.Avalonia;
 
 public sealed class Button : Component
 {
     private readonly global::Avalonia.Controls.Button _button;
+    private readonly IDisposable _effect;
 
-    public Button(Action onClick)
+    public Button(
+        Func<string> contentFunc,
+        Action onClick,
+        global::Avalonia.Layout.HorizontalAlignment horizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center)
     {
         _button = new global::Avalonia.Controls.Button
         {
-            Content = "Press Me!",
             FontSize = 24,
-            HorizontalAlignment = HorizontalAlignment.Center,
+            HorizontalAlignment = horizontalAlignment,
         };
+        _effect = Context.Instance.RegisterEffect(
+            () => _button.Content = contentFunc()
+        );
         _button.Click += (_, _) => onClick();
     }
 
     public override global::Avalonia.Controls.Control GetControl() => _button;
+
+    public override void Dispose() => _effect.Dispose();
 }

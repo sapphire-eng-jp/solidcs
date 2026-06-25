@@ -1,5 +1,3 @@
-using Avalonia.Layout;
-
 namespace SolidCS.Avalonia;
 
 public sealed class Label : Component
@@ -7,11 +5,13 @@ public sealed class Label : Component
     private readonly global::Avalonia.Controls.Label _label;
     private readonly IDisposable _effect;
 
-    public Label(Func<string> contentFunc)
+    public Label(
+        Func<string> contentFunc,
+        global::Avalonia.Layout.HorizontalAlignment horizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center)
     {
         _label = new global::Avalonia.Controls.Label
         {
-            HorizontalAlignment = HorizontalAlignment.Center,
+            HorizontalAlignment = horizontalAlignment,
         };
         _effect = Context.Instance.RegisterEffect(
             () => _label.Content = contentFunc()

@@ -51,7 +51,7 @@ class Program
         {
             new Label(() => $"Count = {count.Value}"),
             new Label(() => "Hello World"),
-            new Button(() => count.Value += 1),
+            new Button(() => $"+1 ({count.Value})", () => count.Value += 1),
         };
     }
 }
