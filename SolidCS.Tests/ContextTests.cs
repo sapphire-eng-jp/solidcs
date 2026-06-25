@@ -19,10 +19,10 @@ public class ContextTests
         var ctx = Context.Instance;
         lock(ctx.Lock)
         {
-            ctx.Subscribers.Push(() => Console.WriteLine("HW"));
+            ctx.Subscribers.Push(new Effect(() => Console.WriteLine("HW")));
 
-            var action = Context.Instance.Subscribers.Pop();
-            action();
+            var effect = Context.Instance.Subscribers.Pop();
+            effect.Run();
 
             Assert.Empty(ctx.Subscribers);
         }
@@ -37,10 +37,8 @@ public class ContextTests
         var ctx = Context.Instance;
         lock(ctx.Lock)
         {
-            ctx.Subscribers.Push(() => 
-                    { b = a * 2; }
-            );
-            ctx.Subscribers.Pop()();
+            ctx.Subscribers.Push(new Effect(() => { b = a * 2; }));
+            ctx.Subscribers.Pop().Run();
         }
         Assert.Equal(4, b);
     }

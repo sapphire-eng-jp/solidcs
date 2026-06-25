@@ -7,15 +7,23 @@ public sealed class Context
 {
     public static Context Instance {get;} = new();
 
-    public Stack<Action> Subscribers {get;} = new();
+    public Stack<Effect> Subscribers {get;} = new();
 
     public System.Threading.Lock Lock {get;} = new();
 
-    public void RegisterEffect(Action subscriber)
+    public IDisposable RegisterEffect(Action callback)
     {
-        Instance.Subscribers.Push(subscriber);
-        subscriber();
-        Instance.Subscribers.Pop();
+        var effect = new Effect(callback);
+        Subscribers.Push(effect);
+        try
+        {
+            effect.Run();
+        }
+        finally
+        {
+            Subscribers.Pop();
+        }
+        return effect;
     }
 
     private Context()

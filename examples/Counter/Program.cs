@@ -40,11 +40,15 @@ class Program
         };
 
         // UI構築はlockして行う
+        Component root;
         lock(Context.Instance.Lock)
         {
-            //win.Content = new Counter().GetControl();
-            win.Content = Counter2.New().GetControl();
+            //root = new Counter();
+            root = Counter2.New();
+            win.Content = root.GetControl();
         }
+
+        win.Closed += (_, _) => root.Dispose();
 
         win.Show();
         app.Run(win);
@@ -81,11 +85,15 @@ class Program
         }
 
         public override Control GetControl() => _panel.GetControl();
+
+        public override void Dispose() => _panel.Dispose();
     }
 
-    abstract class Component
+    abstract class Component : IDisposable
     {
         public abstract Control GetControl();
+
+        public virtual void Dispose() { }
 
         protected static SLabel SLabel(Func<string> _contentFunc)
         {
@@ -106,16 +114,23 @@ class Program
     class SStackPanel : Component
     {
         private StackPanel _stack;
+        private List<Component> _children;
 
         public SStackPanel(List<Component> children)
         {
             _stack = new StackPanel();
+            _children = children;
             children.ForEach((x) => _stack.Children.Add(x.GetControl()));
         }
 
         public override Control GetControl()
         {
             return _stack;
+        }
+
+        public override void Dispose()
+        {
+            foreach (var c in _children) c.Dispose();
         }
     }
 
@@ -142,6 +157,7 @@ class Program
         public Func<string> ContentFunc {get;}
 
         private Label _label;
+        private IDisposable _effect;
 
         public SLabel(Func<string> _contentFunc)
         {
@@ -150,11 +166,13 @@ class Program
                 HorizontalAlignment = HorizontalAlignment.Center,
             };
             ContentFunc = _contentFunc;
-            Context.Instance.RegisterEffect(
+            _effect = Context.Instance.RegisterEffect(
                     () => _label.Content = ContentFunc()
             );
         }
 
         public override Control GetControl() => _label;
+
+        public override void Dispose() => _effect.Dispose();
     }
 }
