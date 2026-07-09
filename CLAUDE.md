@@ -8,11 +8,11 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 
 ## ソリューション構成
 
-- `SolidCS/` — コアライブラリ (net9.0, nullable enable)。`Signal<T>`、`Context`、`Effect` の 3 ファイルで構成される。UI 非依存。
-- `SolidCS.Avalonia/` — Avalonia 11.3.2 ラッパーライブラリ (net9.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネントを `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` と `Avalonia` パッケージを ProjectReference / PackageReference。
-- `SolidCS.Tests/` — xUnit テスト (net9.0)。`SolidCS` を ProjectReference。
-- `examples/Counter/` — Avalonia 11.3.2 製サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ。
-- `examples/Form/` — 同じく Avalonia 11.3.2 製サンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。
+- `SolidCS/` — コアライブラリ (net10.0, nullable enable)。`Signal<T>`、`Context`、`Effect` の 3 ファイルで構成される。UI 非依存。
+- `SolidCS.Avalonia/` — Avalonia 11.3.18 ラッパーライブラリ (net10.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネントを `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` と `Avalonia` パッケージを ProjectReference / PackageReference。
+- `SolidCS.Tests/` — xUnit テスト (net10.0)。`SolidCS` を ProjectReference。
+- `examples/Counter/` — Avalonia 11.3.18 製サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ。
+- `examples/Form/` — 同じく Avalonia 11.3.18 製サンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。
 - `SolidCS.sln` — 上記 5 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
