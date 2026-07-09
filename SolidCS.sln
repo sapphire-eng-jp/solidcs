@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolidCS.Avalonia", "SolidCS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Form", "examples\Form\Form.csproj", "{02D50DC4-90D4-4984-9650-622A3956BC0F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppShell", "examples\AppShell\AppShell.csproj", "{B1985C9A-9800-4B38-908C-86130D3CAE24}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,18 @@ Global
 		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|x64.Build.0 = Release|Any CPU
 		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|x86.ActiveCfg = Release|Any CPU
 		{02D50DC4-90D4-4984-9650-622A3956BC0F}.Release|x86.Build.0 = Release|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Debug|x64.Build.0 = Debug|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Debug|x86.Build.0 = Debug|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Release|x64.ActiveCfg = Release|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Release|x64.Build.0 = Release|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Release|x86.ActiveCfg = Release|Any CPU
+		{B1985C9A-9800-4B38-908C-86130D3CAE24}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -92,5 +106,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{1F03D305-DCA3-41EF-A142-3AEFC49B6501} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{02D50DC4-90D4-4984-9650-622A3956BC0F} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
+		{B1985C9A-9800-4B38-908C-86130D3CAE24} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 EndGlobal
