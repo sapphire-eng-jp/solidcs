@@ -12,7 +12,7 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 - `SolidCS.Avalonia/` — Avalonia 11.3.18 ラッパーライブラリ (net10.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネント、およびアプリ起動用の `App` / `Window` を `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` を ProjectReference、Avalonia 系パッケージ (`Avalonia` / `Avalonia.Desktop` / `Avalonia.Themes.Fluent` / `Avalonia.Fonts.Inter`) を PackageReference — bootstrap を担う関係で Desktop / テーマ / フォントもライブラリ側が持つ。
 - `SolidCS.Tests/` — xUnit テスト (net10.0)。`SolidCS` を ProjectReference。
 - `examples/Counter/` — サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ + `Menu` / `MenuItem` / `Separator` のメニューバーデモ (リアクティブ header とクリックアクション)。**Avalonia を直接参照しない** — `SolidCS` と `SolidCS.Avalonia` の ProjectReference のみで、Avalonia パッケージは SolidCS.Avalonia から推移的に来る。
-- `examples/Form/` — 同上のサンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。
+- `examples/Form/` — 同上のサンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。root を `ScrollViewer` で包み、ウィンドウより縦長のリアクティブコンテンツでスクロールの動作確認も兼ねる。
 - `SolidCS.sln` — 上記 5 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
@@ -58,7 +58,8 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `Window.cs` — トップレベルウィンドウ。root の `Component` と `title` / `width` / `height` / `menu` (すべてオプション引数) を受け取り、`Closed` イベントで content (と menu) の `Dispose()` を呼ぶ配線まで内蔵する。`menu` を渡すと内部で `DockPanel` を作ってメニューバーを上端にドックし、残り全面を content が埋める (`LastChildFill`)。`Component` は継承しない (子として置けるものではないため)。Avalonia 側の `Window` は internal な `GetWindow()` で `App` だけが取り出す。
 - `Menu.cs` / `MenuElement.cs` / `MenuItem.cs` / `Separator.cs` — メニューバー。`Menu` はトップレベル `MenuItem` のコンテナ (collection initializer 可)。`MenuItem` は `Func<string> headerFunc` (状態系なので effect でリアクティブ更新) と `Action? onClick` を受け取り、自身も `MenuElement` のコンテナとしてサブメニューを collection initializer で組める。`MenuElement` は `MenuItem` / `Separator` だけをメニューに入れられるようにするためのマーカー抽象基底 (`Component` 派生)。`MenuItem.Click` は bubble する routed event で子のクリックが親にも届くため、ハンドラ内で `e.Source == _item` を確認して自分のクリックだけ拾う。`Dispose()` は effect 解放 + 子へ伝播。
 - `App.cs` — static class。`App.Run(args, () => new Window(...))` が Avalonia の bootstrap (AppBuilder / `UsePlatformDetect` / `WithInterFont` / `LogToTrace`) と FluentTheme + Light テーマの適用をすべて隠蔽し、ウィンドウを表示してメインループに入る。`windowFactory` は Avalonia 初期化完了後に UI スレッドで呼ばれる — **Component / Window の生成は必ず factory の中で行う** (Main 冒頭で作ると Avalonia 未初期化でコントロール生成が壊れる)。
-- `Orientation.cs` / `HorizontalAlignment.cs` — 公開 API 用の自前列挙型。ライブラリ利用者が Avalonia の型に触らずに済むよう、公開コンストラクタ引数では Avalonia の列挙型 (`Avalonia.Layout.Orientation` 等) を露出せずこちらを受け取る。各ファイル内の internal 拡張メソッド `ToAvalonia()` で Avalonia 側の列挙型へ変換する (キャストではなく switch 式で明示マッピング — 両者の値順序に依存しない)。
+- `ScrollViewer.cs` — 単一 child の `Component` を受け取ってスクロール可能にするラッパー。第 2 / 第 3 引数の `verticalScrollBar` / `horizontalScrollBar` (自前の `ScrollBarVisibility`) でスクロールバー表示を制御する。デフォルトは Avalonia と同じ縦 `Auto` / 横 `Disabled`。`Dispose()` は content へ伝播。
+- `Orientation.cs` / `HorizontalAlignment.cs` / `ScrollBarVisibility.cs` — 公開 API 用の自前列挙型。ライブラリ利用者が Avalonia の型に触らずに済むよう、公開コンストラクタ引数では Avalonia の列挙型 (`Avalonia.Layout.Orientation` 等) を露出せずこちらを受け取る。各ファイル内の internal 拡張メソッド `ToAvalonia()` で Avalonia 側の列挙型へ変換する (キャストではなく switch 式で明示マッピング — 両者の値順序に依存しない)。
 
 双方向バインドコンポーネント (`TextBox`, `CheckBox`) を新しく足すときは以下のパターンを踏襲:
 
