@@ -9,10 +9,10 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 ## ソリューション構成
 
 - `SolidCS/` — コアライブラリ (net10.0, nullable enable)。`Signal<T>`、`Context`、`Effect` の 3 ファイルで構成される。UI 非依存。
-- `SolidCS.Avalonia/` — Avalonia 11.3.18 ラッパーライブラリ (net10.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネントを `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` と `Avalonia` パッケージを ProjectReference / PackageReference。
+- `SolidCS.Avalonia/` — Avalonia 11.3.18 ラッパーライブラリ (net10.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネント、およびアプリ起動用の `App` / `Window` を `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` を ProjectReference、Avalonia 系パッケージ (`Avalonia` / `Avalonia.Desktop` / `Avalonia.Themes.Fluent` / `Avalonia.Fonts.Inter`) を PackageReference — bootstrap を担う関係で Desktop / テーマ / フォントもライブラリ側が持つ。
 - `SolidCS.Tests/` — xUnit テスト (net10.0)。`SolidCS` を ProjectReference。
-- `examples/Counter/` — Avalonia 11.3.18 製サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ。
-- `examples/Form/` — 同じく Avalonia 11.3.18 製サンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。
+- `examples/Counter/` — サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ。**Avalonia を直接参照しない** — `SolidCS` と `SolidCS.Avalonia` の ProjectReference のみで、Avalonia パッケージは SolidCS.Avalonia から推移的に来る。
+- `examples/Form/` — 同上のサンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。
 - `SolidCS.sln` — 上記 5 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
@@ -55,6 +55,8 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `TextBox.cs` — `Signal<string> value` を受け取り、**双方向バインド**する。effect で Signal → UI、`TextChanged` ハンドラで UI → Signal。Signal の setter の equality check で循環が止まるので effect 経由の代入が引き起こす TextChanged のエコーは無限ループにならない。デフォルト `HorizontalAlignment` は `Stretch` (入力欄は幅いっぱい使う想定)。
 - `CheckBox.cs` — `Signal<bool> value` と `Func<string> contentFunc` を受け取り、value は双方向バインド、content はリアクティブ表示。`IsChecked` は `bool?` (Indeterminate あり) だが Signal<bool> に丸めるため `?? false`。イベントは `ToggleButton.IsCheckedChanged`。
 - `StackPanel.cs` — `Component` のコンテナ。`IEnumerable<Component>` 実装 + `Add(Component)` メソッドにより collection initializer 構文 (`new StackPanel { childA, childB }`) で子要素を渡せる。コンストラクタ引数で `Orientation` を渡せる (デフォルト `Vertical`)。`Dispose()` は全ての子に伝播する。
+- `Window.cs` — トップレベルウィンドウ。root の `Component` と `title` / `width` / `height` (オプション引数) を受け取り、`Closed` イベントで content の `Dispose()` を呼ぶ配線まで内蔵する。`Component` は継承しない (子として置けるものではないため)。Avalonia 側の `Window` は internal な `GetWindow()` で `App` だけが取り出す。
+- `App.cs` — static class。`App.Run(args, () => new Window(...))` が Avalonia の bootstrap (AppBuilder / `UsePlatformDetect` / `WithInterFont` / `LogToTrace`) と FluentTheme + Light テーマの適用をすべて隠蔽し、ウィンドウを表示してメインループに入る。`windowFactory` は Avalonia 初期化完了後に UI スレッドで呼ばれる — **Component / Window の生成は必ず factory の中で行う** (Main 冒頭で作ると Avalonia 未初期化でコントロール生成が壊れる)。
 - `Orientation.cs` / `HorizontalAlignment.cs` — 公開 API 用の自前列挙型。ライブラリ利用者が Avalonia の型に触らずに済むよう、公開コンストラクタ引数では Avalonia の列挙型 (`Avalonia.Layout.Orientation` 等) を露出せずこちらを受け取る。各ファイル内の internal 拡張メソッド `ToAvalonia()` で Avalonia 側の列挙型へ変換する (キャストではなく switch 式で明示マッピング — 両者の値順序に依存しない)。
 
 双方向バインドコンポーネント (`TextBox`, `CheckBox`) を新しく足すときは以下のパターンを踏襲:
@@ -87,14 +89,9 @@ static Component Counter()
 }
 ```
 
-ルートで作った `Component` の `GetControl()` を `Window.Content` に渡し、`Window.Closed` で `root.Dispose()` を呼ぶ — これで全 effect が解放される (Dispose は子コンポへ再帰的に伝播する)。
+エントリポイントは `App.Run(args, () => new Window(root, title: "...", width: ..., height: ...))` の 1 行。`Window` がウィンドウ閉時の `root.Dispose()` を配線するので、利用者が effect の解放を意識する必要はない (Dispose は子コンポへ再帰的に伝播する)。
 
-利用側のサンプル (Counter) は Avalonia の `Window` / `Application.Run` extension を生で触る関係で `using Avalonia.Controls;` を書くと `Label` / `Button` / `StackPanel` が `SolidCS.Avalonia` 側と曖昧参照になる。回避策として Counter サンプルでは:
-
-- `Window` などの Avalonia 型を `global::Avalonia.Controls.Window` 形式で完全修飾する
-- `app.Run(win)` を解決するために `using static Avalonia.Controls.DesktopApplicationExtensions;` を入れる (型は import されないので衝突しない)
-
-将来 `SolidCS.Avalonia.Window` も用意したらこの完全修飾は消える想定。
+これにより利用側 (examples) の using は `System` / `SolidCS` / `SolidCS.Avalonia` の 3 つだけで、**Avalonia の型・namespace には一切触れない**。かつては Avalonia の `Window` / `AppBuilder` を直接触るため完全修飾や `using static Avalonia.Controls.DesktopApplicationExtensions;` が必要だったが、`Window` / `App` の導入で撤廃済み。
 
 ### リアクティブ UI コンポーネントを新しく追加するパターン
 
