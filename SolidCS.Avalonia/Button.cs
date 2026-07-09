@@ -8,12 +8,12 @@ public sealed class Button : Component
     public Button(
         Func<string> contentFunc,
         Action onClick,
-        global::Avalonia.Layout.HorizontalAlignment horizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center)
+        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Center)
     {
         _button = new global::Avalonia.Controls.Button
         {
             FontSize = 24,
-            HorizontalAlignment = horizontalAlignment,
+            HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
         _effect = Context.Instance.RegisterEffect(
             () => _button.Content = contentFunc()

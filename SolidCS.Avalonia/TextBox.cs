@@ -7,11 +7,11 @@ public sealed class TextBox : Component
 
     public TextBox(
         Signal<string> value,
-        global::Avalonia.Layout.HorizontalAlignment horizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch)
+        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Stretch)
     {
         _textBox = new global::Avalonia.Controls.TextBox
         {
-            HorizontalAlignment = horizontalAlignment,
+            HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
         // Signal → UI: 他所で value.Value が更新されたら TextBox に反映
         _effect = Context.Instance.RegisterEffect(

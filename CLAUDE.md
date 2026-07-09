@@ -55,6 +55,7 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `TextBox.cs` — `Signal<string> value` を受け取り、**双方向バインド**する。effect で Signal → UI、`TextChanged` ハンドラで UI → Signal。Signal の setter の equality check で循環が止まるので effect 経由の代入が引き起こす TextChanged のエコーは無限ループにならない。デフォルト `HorizontalAlignment` は `Stretch` (入力欄は幅いっぱい使う想定)。
 - `CheckBox.cs` — `Signal<bool> value` と `Func<string> contentFunc` を受け取り、value は双方向バインド、content はリアクティブ表示。`IsChecked` は `bool?` (Indeterminate あり) だが Signal<bool> に丸めるため `?? false`。イベントは `ToggleButton.IsCheckedChanged`。
 - `StackPanel.cs` — `Component` のコンテナ。`IEnumerable<Component>` 実装 + `Add(Component)` メソッドにより collection initializer 構文 (`new StackPanel { childA, childB }`) で子要素を渡せる。コンストラクタ引数で `Orientation` を渡せる (デフォルト `Vertical`)。`Dispose()` は全ての子に伝播する。
+- `Orientation.cs` / `HorizontalAlignment.cs` — 公開 API 用の自前列挙型。ライブラリ利用者が Avalonia の型に触らずに済むよう、公開コンストラクタ引数では Avalonia の列挙型 (`Avalonia.Layout.Orientation` 等) を露出せずこちらを受け取る。各ファイル内の internal 拡張メソッド `ToAvalonia()` で Avalonia 側の列挙型へ変換する (キャストではなく switch 式で明示マッピング — 両者の値順序に依存しない)。
 
 双方向バインドコンポーネント (`TextBox`, `CheckBox`) を新しく足すときは以下のパターンを踏襲:
 
@@ -63,7 +64,7 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 3. Avalonia 側の changed イベント (`TextChanged`, `IsCheckedChanged` 等) で `value.Value = _control.Prop` を書く。
 4. 無限ループ防止は `Signal<T>.Value` setter の `EqualityComparer<T>.Default.Equals` に頼る (effect 経由で同値が書かれた場合 setter は何もしない)。Avalonia 側もたいてい同値代入では change event を発火しないので二重に守られる。
 
-props 化方針: **状態系** (Content など値が時間で変わるもの) は `Func<T>` でリアクティブに受ける。**構造系** (Orientation, HorizontalAlignment など滅多に切り替わらないもの) は素の型のオプション引数で静的に受ける。**見た目系** (Foreground, FontSize, Background など) は現状ハードコードだが、将来は Avalonia の Style system / 専用 Style プロパティでまとめて当てる方向で考える (個別 props 化は API がふくらむので避ける)。
+props 化方針: **状態系** (Content など値が時間で変わるもの) は `Func<T>` でリアクティブに受ける。**構造系** (Orientation, HorizontalAlignment など滅多に切り替わらないもの) は素の型のオプション引数で静的に受ける。**見た目系** (Foreground, FontSize, Background など) は現状ハードコードだが、将来は Avalonia の Style system / 専用 Style プロパティでまとめて当てる方向で考える (個別 props 化は API がふくらむので避ける)。構造系 props の型が Avalonia の列挙型の場合は、そのまま露出せず `SolidCS.Avalonia` 側に対応する列挙型を新設して受ける (上記 `Orientation` / `HorizontalAlignment` のパターン)。
 
 ラッパー実装ファイル内では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。これは自身のクラス名 (`Label`, `Button`, `StackPanel`) と `Avalonia.Controls` 配下の同名型が衝突して `using Avalonia.Controls;` を素直に書けないため。新しいラッパーを足すときも同じ流儀を踏襲すること。
 

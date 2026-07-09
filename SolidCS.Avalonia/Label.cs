@@ -7,11 +7,11 @@ public sealed class Label : Component
 
     public Label(
         Func<string> contentFunc,
-        global::Avalonia.Layout.HorizontalAlignment horizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center)
+        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Center)
     {
         _label = new global::Avalonia.Controls.Label
         {
-            HorizontalAlignment = horizontalAlignment,
+            HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
         _effect = Context.Instance.RegisterEffect(
             () => _label.Content = contentFunc()

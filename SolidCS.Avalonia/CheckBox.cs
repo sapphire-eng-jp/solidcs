@@ -9,11 +9,11 @@ public sealed class CheckBox : Component
     public CheckBox(
         Signal<bool> value,
         Func<string> contentFunc,
-        global::Avalonia.Layout.HorizontalAlignment horizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center)
+        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Center)
     {
         _checkBox = new global::Avalonia.Controls.CheckBox
         {
-            HorizontalAlignment = horizontalAlignment,
+            HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
         _contentEffect = Context.Instance.RegisterEffect(
             () => _checkBox.Content = contentFunc()

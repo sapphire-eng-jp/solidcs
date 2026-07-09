@@ -7,12 +7,11 @@ public sealed class StackPanel : Component, IEnumerable<Component>
     private readonly global::Avalonia.Controls.StackPanel _stack;
     private readonly List<Component> _children = new();
 
-    public StackPanel(
-        global::Avalonia.Layout.Orientation orientation = global::Avalonia.Layout.Orientation.Vertical)
+    public StackPanel(Orientation orientation = Orientation.Vertical)
     {
         _stack = new global::Avalonia.Controls.StackPanel
         {
-            Orientation = orientation,
+            Orientation = orientation.ToAvalonia(),
         };
     }
 
