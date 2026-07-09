@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 using SolidCS;
 using SolidCS.Avalonia;
@@ -54,5 +55,25 @@ class Program
             "About" => "SolidJS-like reactive UI in C#.",
             _ => "???",
         }),
+        Tags(),
     };
+
+    // WrapPanel のデモ。タグボタンがウィンドウ幅に応じて折り返す
+    // (リサイズすると折り返し位置が変わる)。
+    static Component Tags()
+    {
+        var selected = new Signal<string>("(none)");
+
+        var tags = new WrapPanel();
+        foreach (var name in Enumerable.Range(1, 15).Select(i => $"tag-{i:00}"))
+        {
+            tags.Add(new Button(() => name, () => selected.Value = name));
+        }
+
+        return new StackPanel
+        {
+            new Label(() => $"selected = {selected.Value}"),
+            tags,
+        };
+    }
 }
