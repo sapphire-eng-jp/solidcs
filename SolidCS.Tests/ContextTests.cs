@@ -53,5 +53,25 @@ public class ContextTests
         Assert.Equal(2, b);
         Assert.Empty(ctx.Subscribers);
     }
+
+    [Fact]
+    public void RegisterEffectFirstRunThrowCleansUpSubscriptionsTest()
+    {
+        var s = new Signal<int>(0);
+        var runs = 0;
+
+        // 初回 Run が throw すると呼び元はハンドルを受け取れないので、
+        // RegisterEffect 自身が途中まで張られた購読を解除してから再 throw する。
+        Assert.Throws<InvalidOperationException>(() => Context.Instance.RegisterEffect(() =>
+        {
+            _ = s.Value;
+            runs++;
+            throw new InvalidOperationException();
+        }));
+
+        Assert.Equal(1, runs);
+        s.Value = 1;
+        Assert.Equal(1, runs);
+    }
 }
 

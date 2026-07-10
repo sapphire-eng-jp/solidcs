@@ -14,7 +14,8 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 - `examples/Counter/` — サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ + `Menu` / `MenuItem` / `Separator` のメニューバーデモ (リアクティブ header とクリックアクション)。**Avalonia を直接参照しない** — `SolidCS` と `SolidCS.Avalonia` の ProjectReference のみで、Avalonia パッケージは SolidCS.Avalonia から推移的に来る。
 - `examples/Form/` — 同上のサンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。root を `ScrollViewer` で包み、ウィンドウより縦長のリアクティブコンテンツでスクロールの動作確認も兼ねる。フォーム欄は `Grid` の auto-flow モード、統計 + サマリ行は explicit モード (colSpan 付き) で組んであり、Grid 両モードのデモでもある。
 - `examples/AppShell/` — 同上のサンプル。`DockPanel` でアプリの外枠 (ヘッダー Top / ステータスバー Bottom / サイドバー Left / メインコンテンツが残りを埋める) を組み、サイドバーのボタンで `Signal<string>` のページを切り替えるデモ。メインコンテンツには `WrapPanel` のタグボタンギャラリー (ウィンドウ幅で折り返し + クリックで selected 更新) も同居。
-- `SolidCS.sln` — 上記 6 プロジェクトを束ねる。`examples` は solution folder 配下。
+- `examples/Todo/` — 同上のサンプル。動的 children (`For.Each` / `Show`) のデモ。TODO の追加・削除でリストの行が増減し (`Signal<IReadOnlyList<T>>` のイミュータブル更新規約)、完了数の統計行を `Show` (fallback 付き) で出し分ける。設計の経緯は `docs/dynamic-children-design.md`。
+- `SolidCS.sln` — 上記 7 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
 
@@ -27,6 +28,7 @@ dotnet test SolidCS.Tests --filter "FullyQualifiedName~SignalTests.SubscribeTest
 dotnet run --project examples/Counter                      # Counter サンプル起動
 dotnet run --project examples/Form                         # Form サンプル起動 (TextBox/CheckBox の双方向バインド確認)
 dotnet run --project examples/AppShell                     # AppShell サンプル起動 (DockPanel レイアウト確認)
+dotnet run --project examples/Todo                         # Todo サンプル起動 (For/Show の動的 children 確認)
 dotnet publish examples/Counter -c Release                 # サンプルを AOT で発行
 ```
 
@@ -38,7 +40,8 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `Context.RegisterEffect(Action)` は `Effect` を 1 つ作って `effect.Run()` を呼ぶだけ。Push/Pop と依存の張り替えは `Effect.Run()` の責務。
 - `Effect.Run()` は (1) 前回の購読を `Untrack()` で全部解除、(2) 自分を Subscribers に Push、(3) コールバックを実行、(4) finally で Pop、という 1 セット。これにより条件分岐で読まれる Signal が変わっても依存が再追跡される。`_disposed` 中はノーオペ。
 - `Signal<T>.Value` の getter は `Context.Instance.Subscribers.TryPeek` で現在の Effect を取り、`_subscribers` (HashSet) に追加。同時に effect 側に「自分を購読者リストから外す」cleanup を仕込んで、次の `Run()` 冒頭の `Untrack()` で解除されるようにする。
-- `Signal<T>.Value` の setter は `EqualityComparer<T>.Default` で前値と一致した場合は通知をスキップ。購読者がいる場合は `_subscribers.ToArray()` でスナップショットを取ってから反復する (通知中に effect が _subscribers を変更してもコレクション変更例外にならない)。
+- `Signal<T>.Value` の setter は `EqualityComparer<T>.Default` で前値と一致した場合は通知をスキップ。購読者がいる場合は `_subscribers.ToArray()` でスナップショットを取ってから反復する (通知中に effect が _subscribers を変更してもコレクション変更例外にならない)。同一通知パス内で Dispose された effect にスナップショット経由で通知が届いても `Effect._disposed` ガードでノーオペ (この挙動は `SignalTests` / `UntrackTests` で固定済み — For/Show の再構築が依存する)。
+- `Context.Untrack(Action)` / `Untrack<T>(Func<T>)` — 依存追跡を切って実行する。実装は Subscribers スタックを空スタックに差し替えて finally で戻す方式 (番兵 null 方式ではない) — これにより Untrack 中の `RegisterEffect` (子 Component の構築) は新しい空スタック上で正しく依存追跡できる。effect 内で子 Component を構築する For / Show が、子コンストラクタで読まれた Signal を自分に購読してしまう過追跡を防ぐのが主用途。public なのでライブラリユーザーも使える。
 
 ### Subscribers スタックは AsyncLocal で隔離される
 
@@ -63,6 +66,8 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `Grid.cs` — 行・列を文字列ミニ言語 (XAML の GridLength 記法: `"Auto"` / `"*"` / `"2*"` / `"100"` のカンマ区切り、パースは Avalonia の `RowDefinitions(string)` に委譲) で定義するグリッド。`RowDefinition` 等のオブジェクトは公開 API に露出しない。モードが 2 つ: **auto-flow** (`rows` 省略) は素の `Add(child)` で子を左→右に流し込み必要なだけ Auto 行を自動生成、**explicit** (`rows` 指定) は collection initializer の `{ child, row, col }` / `{ child, row, col, rowSpan, colSpan }` で明示配置。範囲外の配置は Avalonia が黙ってクランプする前に Add 時点で `ArgumentOutOfRangeException`、モード混在は `InvalidOperationException` で fail-fast。`Dispose()` は全子へ伝播。
 - `WrapPanel.cs` — 子を並べて幅 (縦なら高さ) で折り返すコンテナ。API は StackPanel と同型 (collection initializer + `Orientation` オプション引数) だが、デフォルト Orientation は Avalonia に合わせて `Horizontal` (StackPanel の `Vertical` とは逆) なので注意。
 - `DockPanel.cs` — 子を上下左右にドックするコンテナ。collection initializer で `{ child, Dock.Top }` (複数引数の `Add(Component, Dock)`) と `child` 単体 (Dock 指定なし) の両方を受け、コンストラクタ引数 `lastChildFill` (デフォルト true) で最後の子が残り全面を埋める。`Dispose()` は全子へ伝播。`Window` の menu 用内部 DockPanel とは独立 (あちらは素の Avalonia 型を直接使う)。
+- `Show.cs` — 条件付き表示。`new Show(when, child, fallback, keepAlive)` で `Func<bool> when` が真なら `Func<Component> child`、偽なら `Func<Component>? fallback` (省略時は空) を表示する。実体は ContentControl の Content 差し替え。デフォルトは **unmount** (条件反転のたびに旧側を Dispose して作り直し — 状態リセット、SolidJS の Show と同じ)、`keepAlive: true` で一度構築した Component を保持して差し替えのみ (状態保持)。子の構築は `Context.Untrack` の中で行い、when の Signal だけを追跡する。**条件値が前回と同じなら何もしない** (`bool? _lastCond` ガード) — `Count > 0` のような派生条件では条件が反転しなくても effect が再実行されるため、これがないと子が無意味に破棄・再構築される。差し替えは新側を構築してから旧側を Dispose する順序 (ファクトリが throw しても旧側が生きたまま残る)。構築中にファクトリが when の読む Signal を書く再入は `InvalidOperationException` で fail-fast。
+- `For.cs` — 動的リスト。`For.Each(() => items.Value, item => ..., key: null, orientation: ...)` の static ファクトリが入口 (C# はコンストラクタでジェネリック推論が効かないため)。実体の `ForComponent<T>` は内部 StackPanel を持つ自前パネル方式で、リスト Signal の変化のたび **v1 は全子を Dispose して作り直す** (アイテム内の UI 状態は消える)。`key` 引数は v2 の keyed diff 用にシグネチャだけ確保して未使用。リストは `Signal<IReadOnlyList<T>>` + イミュータブル更新規約 (`todos.Value = [.. todos.Value, item]`) — in-place 変更は setter の参照比較を素通りして通知されない。子構築の過追跡防止 (`Untrack`) は Show と同じ。再構築は**新世代を全部構築してから旧世代を破棄** (render が途中で throw したら旧世代は無傷のまま残り、作りかけの新世代は解放)、パネルへの投入は `Children.AddRange` で一括 (逐次 Add だと子の数だけレイアウト無効化が走る)。構築中に render がリスト Signal を書く再入は `InvalidOperationException` で fail-fast。
 - `ScrollViewer.cs` — 単一 child の `Component` を受け取ってスクロール可能にするラッパー。第 2 / 第 3 引数の `verticalScrollBar` / `horizontalScrollBar` (自前の `ScrollBarVisibility`) でスクロールバー表示を制御する。デフォルトは Avalonia と同じ縦 `Auto` / 横 `Disabled`。`Dispose()` は content へ伝播。
 - `Orientation.cs` / `HorizontalAlignment.cs` / `ScrollBarVisibility.cs` / `Dock.cs` — 公開 API 用の自前列挙型。ライブラリ利用者が Avalonia の型に触らずに済むよう、公開コンストラクタ引数では Avalonia の列挙型 (`Avalonia.Layout.Orientation` 等) を露出せずこちらを受け取る。各ファイル内の internal 拡張メソッド `ToAvalonia()` で Avalonia 側の列挙型へ変換する (キャストではなく switch 式で明示マッピング — 両者の値順序に依存しない)。
 

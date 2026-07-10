@@ -1,6 +1,6 @@
 # 動的 children (For / Show) 設計案
 
-Status: **ドラフト** (2026-07-10 時点の検討まとめ。未決事項あり)
+Status: **v1 実装済み** (2026-07-10。実装ステップ 1〜5 完了 — `Context.Untrack` + テスト、`Show`、`For.Each`、`examples/Todo`、GUI 実機確認まで。ステップ 6 の keyed diff 等は将来課題のまま)
 
 SolidJS の `<For>` / `<Show>` 相当を SolidCS.Avalonia に導入するための仕様案。
 現状のコンテナ (StackPanel / Grid 等) は構築時に子が固定で、「Signal の変化で
@@ -82,8 +82,10 @@ For の子を直接配置する」ことはできない (For ごと 1 セルに�
 
 - **unmount (デフォルト)**: Dispose して破棄。SolidJS の Show と同じ。
   effect が確実に解放され、再表示時は状態リセット。
-- **keepAlive (オプション)**: 構築済みの子を保持し `IsVisible` だけ切り替え。
-  状態保持・再表示が高速。`new Show(when, child, fallback, keepAlive: true)`。
+- **keepAlive (オプション)**: 構築済みの子を保持し、ContentControl の Content
+  差し替えで表示側だけ切り替える (非表示側は視覚ツリーから外れるが Dispose は
+  されず、effect とアイテム内状態は生き続ける)。状態保持・再表示が高速。
+  `new Show(when, child, fallback, keepAlive: true)`。
 
 実装は ContentControl の Content 差し替え。fallback は `Func<Component>?`
 (省略時は空)。
@@ -135,8 +137,13 @@ Dispose された effect に後から通知が届くケース**が起こりう�
 5. example: `examples/Todo` 新設 + GUI 確認
 6. 将来: keyed diff (論点 3 v2)、SignalList (論点 2 b 案)、splice 方式 (論点 4)
 
-## 未決事項
+## 未決事項 (v1 実装時に決定済み)
 
-- `Show` の fallback 引数の形 (`Func<Component>?` で確定でよいか)
-- For の内部パネルに WrapPanel / Grid を選べるようにするか (v1 は StackPanel 固定でよい?)
-- `Untrack` の公開範囲 (ライブラリユーザーにも公開するか、internal に留めるか)
+- `Show` の fallback 引数の形 → **`Func<Component>?` で確定** (省略時は空表示)。
+- For の内部パネルに WrapPanel / Grid を選べるようにするか → **v1 は StackPanel 固定**
+  (`Orientation` オプション引数のみ)。必要になったら再検討。
+- `Untrack` の公開範囲 → **public**。SolidCS.Avalonia が別アセンブリなのでいずれにせよ
+  公開が必要で、SolidJS も untrack を公開 API にしている。実装は「Subscribers スタックを
+  空スタックに差し替えて finally で戻す」方式 — 番兵 null 方式だと Signal getter の
+  TryPeek が null を掴むし、スタック差し替えなら Untrack 中の RegisterEffect (子構築) が
+  新しいスタック上でそのまま正しく動く。
