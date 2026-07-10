@@ -12,7 +12,7 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 - `SolidCS.Avalonia/` — Avalonia 11.3.18 ラッパーライブラリ (net10.0)。`Component` 抽象基底と `Label` / `Button` / `StackPanel` などのリアクティブ UI コンポーネント、およびアプリ起動用の `App` / `Window` を `SolidCS.Avalonia` namespace に公開する。型名は Avalonia 側 (`Avalonia.Controls.Label` 等) と素朴に被るので、ラッパー実装の内側では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。`SolidCS` を ProjectReference、Avalonia 系パッケージ (`Avalonia` / `Avalonia.Desktop` / `Avalonia.Themes.Fluent` / `Avalonia.Fonts.Inter`) を PackageReference — bootstrap を担う関係で Desktop / テーマ / フォントもライブラリ側が持つ。
 - `SolidCS.Tests/` — xUnit テスト (net10.0)。`SolidCS` を ProjectReference。
 - `examples/Counter/` — サンプル (`PublishAot=true`, `WinExe`)。`Label` / `Button` / `StackPanel` を使う最小デモ + `Menu` / `MenuItem` / `Separator` のメニューバーデモ (リアクティブ header とクリックアクション)。**Avalonia を直接参照しない** — `SolidCS` と `SolidCS.Avalonia` の ProjectReference のみで、Avalonia パッケージは SolidCS.Avalonia から推移的に来る。
-- `examples/Form/` — 同上のサンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。root を `ScrollViewer` で包み、ウィンドウより縦長のリアクティブコンテンツでスクロールの動作確認も兼ねる。フォーム欄は `Grid` の auto-flow モード、統計 + サマリ行は explicit モード (colSpan 付き) で組んであり、Grid 両モードのデモでもある。
+- `examples/Form/` — 同上のサンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。root を `ScrollViewer` で包み、ウィンドウより縦長のリアクティブコンテンツでスクロールの動作確認も兼ねる。フォーム欄は `Grid` の auto-flow モード、統計 + サマリ行は explicit モード (colSpan 付き) で組んであり、Grid 両モードのデモでもある。さらに root の `WithFont(Func 版)` + A-/A+ ボタンで全体のフォントサイズを実行時に変えるデモと、挨拶行の静的 `WithFont` (20px Bold — 内側が勝つので root の変更に追従しない) のデモを兼ねる。
 - `examples/AppShell/` — 同上のサンプル。`DockPanel` でアプリの外枠 (ヘッダー Top / ステータスバー Bottom / サイドバー Left / メインコンテンツが残りを埋める) を組み、サイドバーのボタンで `Signal<string>` のページを切り替えるデモ。メインコンテンツには `WrapPanel` のタグボタンギャラリー (ウィンドウ幅で折り返し + クリックで selected 更新) も同居。
 - `examples/Todo/` — 同上のサンプル。動的 children (`For.Each` / `Show`) のデモ。TODO の追加・削除でリストの行が増減し (`Signal<IReadOnlyList<T>>` のイミュータブル更新規約)、完了数の統計行を `Show` (fallback 付き) で出し分ける。設計の経緯は `docs/dynamic-children-design.md`。
 - `SolidCS.sln` — 上記 7 プロジェクトを束ねる。`examples` は solution folder 配下。
@@ -53,7 +53,7 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 
 `SolidCS.Avalonia` は以下のファイルで成立している:
 
-- `Component.cs` — `abstract class Component : IDisposable`。`GetControl()` で内部の `Avalonia.Controls.Control` を返す。すべてのラッパーはこれを継承する。
+- `Component.cs` — `abstract class Component : IDisposable`。`GetControl()` で内部の `Avalonia.Controls.Control` を返す。すべてのラッパーはこれを継承する。フォント設定の **`WithFont`** を基底で提供する: `WithFont(Font)` (静的) / `WithFont(Func<Font>)` (リアクティブ — 中で読まれた Signal の変化で再適用、実行時フォント変更) の 2 オーバーロードで、`this` を返すので collection initializer 内でチェーンできる (`new Label(...).WithFont(...)`)。適用は control の `Styles` に Style を足す方式 — `TextElement` の継承 attached property だと Fluent の ControlTheme (Button 等が FontSize を setter で持つ) に負けるが、Style は ControlTheme より優先されるため**コンテナに当てると子孫全体にカスケード**し、ネストした WithFont は近い方が勝つ。FontSize 等を `TemplatedControl` 系と `TextBlock` が別々の型で持つ都合で同内容の Style を 2 本 (selector `Is<TemplatedControl>` / `Is<TextBlock>`) 当てている。2 回目の `WithFont` は `InvalidOperationException` で fail-fast。Dispose は **template method**: `Dispose()` (非仮想) が WithFont の effect を解放してから `protected virtual OnDispose()` を呼ぶ — 派生クラスは `OnDispose()` をオーバーライドし、base 呼び出しは不要。
 - `Label.cs` — `Func<string> contentFunc` を受け取って `Context.Instance.RegisterEffect(() => _label.Content = contentFunc())` を呼ぶ。effect 内で読まれた Signal が変わると Label が自動更新される。`Dispose()` で effect を解放。第 2 引数で `HorizontalAlignment` を渡せる (デフォルト `Center`)。
 - `TextBlock.cs` — Label の TextBlock 版。表示専用テキストでは Label の `Content` (object) より TextBlock の `Text` (string) の方が軽量で素直なのでこちらを使う。API は Label と同じ。
 - `Button.cs` — `Func<string> contentFunc` と `Action onClick` を受け取り、Content は Label と同じく effect でリアクティブに更新する。第 3 引数で `HorizontalAlignment` を渡せる (デフォルト `Center`)。
@@ -69,6 +69,7 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `Show.cs` — 条件付き表示。`new Show(when, child, fallback, keepAlive)` で `Func<bool> when` が真なら `Func<Component> child`、偽なら `Func<Component>? fallback` (省略時は空) を表示する。実体は ContentControl の Content 差し替え。デフォルトは **unmount** (条件反転のたびに旧側を Dispose して作り直し — 状態リセット、SolidJS の Show と同じ)、`keepAlive: true` で一度構築した Component を保持して差し替えのみ (状態保持)。子の構築は `Context.Untrack` の中で行い、when の Signal だけを追跡する。**条件値が前回と同じなら何もしない** (`bool? _lastCond` ガード) — `Count > 0` のような派生条件では条件が反転しなくても effect が再実行されるため、これがないと子が無意味に破棄・再構築される。差し替えは新側を構築してから旧側を Dispose する順序 (ファクトリが throw しても旧側が生きたまま残る)。構築中にファクトリが when の読む Signal を書く再入は `InvalidOperationException` で fail-fast。
 - `For.cs` — 動的リスト。`For.Each(() => items.Value, item => ..., key: null, orientation: ...)` の static ファクトリが入口 (C# はコンストラクタでジェネリック推論が効かないため)。実体の `ForComponent<T>` は内部 StackPanel を持つ自前パネル方式で、リスト Signal の変化のたび **v1 は全子を Dispose して作り直す** (アイテム内の UI 状態は消える)。`key` 引数は v2 の keyed diff 用にシグネチャだけ確保して未使用。リストは `Signal<IReadOnlyList<T>>` + イミュータブル更新規約 (`todos.Value = [.. todos.Value, item]`) — in-place 変更は setter の参照比較を素通りして通知されない。子構築の過追跡防止 (`Untrack`) は Show と同じ。再構築は**新世代を全部構築してから旧世代を破棄** (render が途中で throw したら旧世代は無傷のまま残り、作りかけの新世代は解放)、パネルへの投入は `Children.AddRange` で一括 (逐次 Add だと子の数だけレイアウト無効化が走る)。構築中に render がリスト Signal を書く再入は `InvalidOperationException` で fail-fast。
 - `ScrollViewer.cs` — 単一 child の `Component` を受け取ってスクロール可能にするラッパー。第 2 / 第 3 引数の `verticalScrollBar` / `horizontalScrollBar` (自前の `ScrollBarVisibility`) でスクロールバー表示を制御する。デフォルトは Avalonia と同じ縦 `Auto` / 横 `Disabled`。`Dispose()` は content へ伝播。
+- `Font.cs` — `Component.WithFont` に渡す `Font` record (`Family` / `Size` / `Weight` / `Style`、全メンバーがオプションで null は「指定なし」= テーマ/外側の値のまま) と、自前列挙型 `FontWeight` / `FontStyle` + internal `ToAvalonia()`。`Family` は Avalonia の FontFamily 記法の文字列 (`"Consolas"` / `"Inter, Arial"` 等) で `FontFamily.Parse` に委譲。
 - `Orientation.cs` / `HorizontalAlignment.cs` / `ScrollBarVisibility.cs` / `Dock.cs` — 公開 API 用の自前列挙型。ライブラリ利用者が Avalonia の型に触らずに済むよう、公開コンストラクタ引数では Avalonia の列挙型 (`Avalonia.Layout.Orientation` 等) を露出せずこちらを受け取る。各ファイル内の internal 拡張メソッド `ToAvalonia()` で Avalonia 側の列挙型へ変換する (キャストではなく switch 式で明示マッピング — 両者の値順序に依存しない)。
 
 双方向バインドコンポーネント (`TextBox`, `CheckBox`) を新しく足すときは以下のパターンを踏襲:
@@ -78,7 +79,7 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 3. Avalonia 側の changed イベント (`TextChanged`, `IsCheckedChanged` 等) で `value.Value = _control.Prop` を書く。
 4. 無限ループ防止は `Signal<T>.Value` setter の `EqualityComparer<T>.Default.Equals` に頼る (effect 経由で同値が書かれた場合 setter は何もしない)。Avalonia 側もたいてい同値代入では change event を発火しないので二重に守られる。
 
-props 化方針: **状態系** (Content など値が時間で変わるもの) は `Func<T>` でリアクティブに受ける。**構造系** (Orientation, HorizontalAlignment など滅多に切り替わらないもの) は素の型のオプション引数で静的に受ける。**見た目系** (Foreground, FontSize, Background など) は現状ハードコードだが、将来は Avalonia の Style system / 専用 Style プロパティでまとめて当てる方向で考える (個別 props 化は API がふくらむので避ける)。構造系 props の型が Avalonia の列挙型の場合は、そのまま露出せず `SolidCS.Avalonia` 側に対応する列挙型を新設して受ける (上記 `Orientation` / `HorizontalAlignment` のパターン)。
+props 化方針: **状態系** (Content など値が時間で変わるもの) は `Func<T>` でリアクティブに受ける。**構造系** (Orientation, HorizontalAlignment など滅多に切り替わらないもの) は素の型のオプション引数で静的に受ける。**見た目系** (Foreground, FontSize, Background など) はコンストラクタ props にせず、Style ベースの専用メソッドでまとめて当てる (個別 props 化は API がふくらむので避ける) — フォント系は `Component.WithFont` で実現済みで、色などを足すときも同じ方式 (基底のメソッド + Style 適用) を踏襲する。かつて Button にあった `FontSize = 24` のハードコードは WithFont 導入時に撤去済み (Counter サンプル側の `WithFont(new Font(Size: 24))` に移動)。構造系 props の型が Avalonia の列挙型の場合は、そのまま露出せず `SolidCS.Avalonia` 側に対応する列挙型を新設して受ける (上記 `Orientation` / `HorizontalAlignment` のパターン)。
 
 ラッパー実装ファイル内では Avalonia 型を `global::Avalonia.Controls.X` で完全修飾している。これは自身のクラス名 (`Label`, `Button`, `StackPanel`) と `Avalonia.Controls` 配下の同名型が衝突して `using Avalonia.Controls;` を素直に書けないため。新しいラッパーを足すときも同じ流儀を踏襲すること。
 
@@ -113,7 +114,7 @@ static Component Counter()
 2. コンストラクタ内で Avalonia の Control を生成。
 3. リアクティブに更新したいプロパティごとに `Context.Instance.RegisterEffect(() => _control.Prop = func())` を呼び、戻り値の `IDisposable` をフィールドに保持する。
 4. `GetControl()` で生成した Control を返す。
-5. `Dispose()` ですべての effect を解放する (コンテナ系の場合はさらに子へ Dispose を伝播)。
+5. `OnDispose()` (protected override) ですべての effect を解放する (コンテナ系の場合はさらに子へ `Dispose()` を伝播)。`Dispose()` 自体は基底の非仮想メソッドで、WithFont の effect 解放 → `OnDispose()` の順に呼ぶ。
 
 ## 既知のゴミ
 

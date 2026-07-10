@@ -15,7 +15,7 @@ public sealed class Menu : Component, IEnumerable<MenuItem>
 
     public override global::Avalonia.Controls.Control GetControl() => _menu;
 
-    public override void Dispose()
+    protected override void OnDispose()
     {
         foreach (var i in _items) i.Dispose();
     }

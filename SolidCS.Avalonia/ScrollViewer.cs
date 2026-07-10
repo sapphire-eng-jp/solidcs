@@ -21,5 +21,5 @@ public sealed class ScrollViewer : Component
 
     public override global::Avalonia.Controls.Control GetControl() => _scrollViewer;
 
-    public override void Dispose() => _content.Dispose();
+    protected override void OnDispose() => _content.Dispose();
 }

@@ -35,7 +35,7 @@ public sealed class DockPanel : Component, IEnumerable<Component>
 
     public override global::Avalonia.Controls.Control GetControl() => _dock;
 
-    public override void Dispose()
+    protected override void OnDispose()
     {
         foreach (var c in _children) c.Dispose();
     }

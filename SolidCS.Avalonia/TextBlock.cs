@@ -20,5 +20,5 @@ public sealed class TextBlock : Component
 
     public override global::Avalonia.Controls.Control GetControl() => _textBlock;
 
-    public override void Dispose() => _effect.Dispose();
+    protected override void OnDispose() => _effect.Dispose();
 }

@@ -16,15 +16,31 @@ class Program
     {
         var name = new Signal<string>("");
         var friendly = new Signal<bool>(true);
+        var fontSize = new Signal<double>(14);
 
         // ウィンドウ (320px) より縦に長いコンテンツを ScrollViewer で包む。
         // 各行が name に反応するので、スクロール先でもリアクティブ更新が生きて
         // いることを確認できる。
+        // root の WithFont(Func 版) が fontSize Signal を読むので、A-/A+ ボタンで
+        // フォーム全体のフォントサイズが実行時に変わる (実行時フォント変更のデモ)。
         return new ScrollViewer(new StackPanel
         {
+            // 挨拶行は WithFont の静的指定で上書き — 内側 (近い方) が勝つので
+            // root のサイズ変更に追従せず 20px Bold のまま。
             new TextBlock(() => friendly.Value
                 ? (name.Value.Length == 0 ? "Hello, stranger!" : $"Hello, {name.Value}!")
-                : (name.Value.Length == 0 ? "Hi." : $"Hi {name.Value}.")),
+                : (name.Value.Length == 0 ? "Hi." : $"Hi {name.Value}."))
+                .WithFont(new Font(Size: 20, Weight: FontWeight.Bold)),
+
+            // 実行時フォント変更の操作列。Button を Stretch でセル幅いっぱいにする。
+            new Grid(columns: "*,Auto,*")
+            {
+                new Button(() => "A-", () => fontSize.Value = Math.Max(8, fontSize.Value - 2),
+                    HorizontalAlignment.Stretch),
+                new Label(() => $"{fontSize.Value:0}px"),
+                new Button(() => "A+", () => fontSize.Value = Math.Min(32, fontSize.Value + 2),
+                    HorizontalAlignment.Stretch),
+            },
 
             // Grid の auto-flow モード: rows 省略で子を左→右に流し込み、
             // ラベル列は中身ぶん (Auto)、入力欄が残り全部 (*)。
@@ -45,6 +61,6 @@ class Program
             new TextBlock(() => string.Join("\n",
                 Enumerable.Range(1, 40).Select(i =>
                     $"{i,2}: {(name.Value.Length == 0 ? "(no name)" : name.Value)}"))),
-        });
+        }.WithFont(() => new Font(Size: fontSize.Value)));
     }
 }

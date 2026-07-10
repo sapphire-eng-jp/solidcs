@@ -33,6 +33,9 @@ class Program
     {
         new Label(() => $"Count = {count.Value}"),
         new Label(() => "Hello World"),
-        new Button(() => $"+1 ({count.Value})", () => count.Value += 1),
+        // Button のフォントは以前ラッパー側で 24px 固定だったが、
+        // WithFont の導入でハードコードを撤去し利用側の指定に移した。
+        new Button(() => $"+1 ({count.Value})", () => count.Value += 1)
+            .WithFont(new Font(Size: 24)),
     };
 }

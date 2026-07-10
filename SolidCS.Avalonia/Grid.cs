@@ -101,7 +101,7 @@ public sealed class Grid : Component, IEnumerable<Component>
 
     public override global::Avalonia.Controls.Control GetControl() => _grid;
 
-    public override void Dispose()
+    protected override void OnDispose()
     {
         foreach (var c in _children) c.Dispose();
     }

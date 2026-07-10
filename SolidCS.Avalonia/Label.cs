@@ -20,5 +20,5 @@ public sealed class Label : Component
 
     public override global::Avalonia.Controls.Control GetControl() => _label;
 
-    public override void Dispose() => _effect.Dispose();
+    protected override void OnDispose() => _effect.Dispose();
 }

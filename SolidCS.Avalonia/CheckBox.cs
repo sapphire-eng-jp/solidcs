@@ -27,7 +27,7 @@ public sealed class CheckBox : Component
 
     public override global::Avalonia.Controls.Control GetControl() => _checkBox;
 
-    public override void Dispose()
+    protected override void OnDispose()
     {
         _contentEffect.Dispose();
         _valueEffect.Dispose();

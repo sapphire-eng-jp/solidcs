@@ -95,7 +95,7 @@ public sealed class Show : Component
 
     public override global::Avalonia.Controls.Control GetControl() => _host;
 
-    public override void Dispose()
+    protected override void OnDispose()
     {
         _effect.Dispose();
         _current?.Dispose();

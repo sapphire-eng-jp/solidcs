@@ -96,7 +96,7 @@ public sealed class ForComponent<T> : Component
 
     public override global::Avalonia.Controls.Control GetControl() => _panel;
 
-    public override void Dispose()
+    protected override void OnDispose()
     {
         _effect.Dispose();
         foreach (var c in _children) c.Dispose();

@@ -24,7 +24,7 @@ public sealed class WrapPanel : Component, IEnumerable<Component>
 
     public override global::Avalonia.Controls.Control GetControl() => _wrap;
 
-    public override void Dispose()
+    protected override void OnDispose()
     {
         foreach (var c in _children) c.Dispose();
     }

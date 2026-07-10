@@ -12,7 +12,6 @@ public sealed class Button : Component
     {
         _button = new global::Avalonia.Controls.Button
         {
-            FontSize = 24,
             HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
         _effect = Context.Instance.RegisterEffect(
@@ -23,5 +22,5 @@ public sealed class Button : Component
 
     public override global::Avalonia.Controls.Control GetControl() => _button;
 
-    public override void Dispose() => _effect.Dispose();
+    protected override void OnDispose() => _effect.Dispose();
 }
