@@ -17,6 +17,9 @@ class Program
         var name = new Signal<string>("");
         var friendly = new Signal<bool>(true);
         var fontSize = new Signal<double>(14);
+        var volume = new Signal<double>(30);
+        var qty = new Signal<decimal>(1);
+        var mood = new Signal<string>("calm");
 
         // ウィンドウ (320px) より縦に長いコンテンツを ScrollViewer で包む。
         // 各行が name に反応するので、スクロール先でもリアクティブ更新が生きて
@@ -49,6 +52,20 @@ class Program
                 new Label(() => "Name"), new TextBox(name),
                 new Label(() => "Style"), new CheckBox(friendly, () => "Use friendly greeting"),
             },
+
+            // Phase 1 コントロール群のデモ: Slider と ProgressBar は同じ Signal を
+            // 共有し (Slider を動かすとバーが追従)、NumericUpDown / RadioGroup の
+            // 値は下のサマリ行にリアクティブ反映される。
+            new Grid(columns: "Auto,*")
+            {
+                new Label(() => "Volume"), new Slider(volume),
+                new Label(() => "Qty"), new NumericUpDown(qty, min: 0, max: 99),
+                new Label(() => "Mood"), RadioGroup.Of(mood, ["calm", "hyper", "sleepy"],
+                    m => m, Orientation.Horizontal),
+            },
+            new ProgressBar(() => volume.Value),
+            new TextBlock(() =>
+                $"volume {volume.Value:0}% / qty {qty.Value} / {mood.Value} mood"),
 
             // Grid の explicit モード: 統計 2 セル + colSpan 2 のサマリ行。
             new Grid(rows: "Auto,Auto", columns: "*,*")
