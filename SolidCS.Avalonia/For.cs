@@ -7,6 +7,12 @@ namespace SolidCS.Avalonia;
 /// 更新は「新しいリストを代入」のイミュータブル規約
 /// (`todos.Value = [.. todos.Value, item]`) — in-place の Add は setter の
 /// 参照比較を素通りして通知されない。
+/// v2 (keyed diff): key (省略時はアイテム自身) が一致する子は Component を
+/// 再利用し、追加/削除/並べ替えだけを差分適用する — アイテム内の UI 状態
+/// (入力途中・フォーカス等) がリスト増減で消えない。再利用された子は
+/// 再 render されないので、アイテム内の変化はアイテム内の Signal で表現する
+/// こと (key を Id 等にして中身だけ変えると表示が古いまま残る)。
+/// key の重複は InvalidOperationException で fail-fast。
 /// </summary>
 public static class For
 {
@@ -22,8 +28,9 @@ public sealed class ForComponent<T> : Component
 {
     private readonly global::Avalonia.Controls.StackPanel _panel;
     private readonly Func<T, Component> _render;
-    private readonly List<Component> _children = new();
+    private readonly Func<T, object> _keyFn;
     private readonly IDisposable _effect;
+    private List<(object Key, Component Comp)> _entries = new();
     // 構築中の再入検出用 (render や子コンストラクタがリスト Signal を書くケース)
     private bool _rebuilding;
 
@@ -33,10 +40,8 @@ public sealed class ForComponent<T> : Component
         Func<T, object>? key,
         Orientation orientation)
     {
-        // key は v1 では未使用。v2 の keyed diff (key 一致のアイテムは Component を
-        // 再利用) にシグネチャ変更なしで差し替えるための口だけ確保してある。
-        _ = key;
         _render = render;
+        _keyFn = key ?? (x => (object)x!);
         _panel = new global::Avalonia.Controls.StackPanel
         {
             Orientation = orientation.ToAvalonia(),
@@ -50,13 +55,10 @@ public sealed class ForComponent<T> : Component
         });
     }
 
-    // v1 は全破棄 + 作り直し。アイテム内の状態 (TextBox の入力途中・フォーカス・
-    // アイテム内 Signal) はリスト変化のたびに消える点に注意。
     private void Rebuild(IReadOnlyList<T> list)
     {
-        // render がリスト Signal を書くと構築ループの最中にこの effect が再入し、
-        // 内側の再構築完了後に外側ループが旧リストの子を追記して新旧が混在する。
-        // 黙って壊れる前に fail-fast する。
+        // render がリスト Signal を書くと構築ループの最中にこの effect が再入して
+        // 新旧が混在する。黙って壊れる前に fail-fast する。
         if (_rebuilding)
         {
             throw new InvalidOperationException(
@@ -66,27 +68,33 @@ public sealed class ForComponent<T> : Component
         _rebuilding = true;
         try
         {
-            // 先に新世代を全部構築してから旧世代を破棄する。render が途中で throw
-            // しても旧世代は無傷のまま表示され続け、作りかけの新世代はここで解放する
-            // (返却前に throw した子コンストラクタ内部の effect までは救えない)。
-            var next = new List<Component>(list.Count);
-            try
-            {
-                foreach (var item in list) next.Add(_render(item));
-            }
-            catch
-            {
-                foreach (var c in next) c.Dispose();
-                throw;
-            }
+            // key 一致の子は再利用、新規だけ render、消えた子だけ Dispose。
+            // render が途中で throw した場合は作りかけの新規子だけ解放され、
+            // 既存の子と表示は無傷のまま残る (Reconcile 内で保証)。
+            _entries = KeyedDiff.Reconcile(_entries, list, _keyFn, _render, c => c.Dispose());
 
-            foreach (var c in _children) c.Dispose();
-            _children.Clear();
-            _panel.Children.Clear();
-
-            _children.AddRange(next);
-            // 1 個ずつ Add すると子の数だけ変更通知とレイアウト無効化が走るので一括で入れる。
-            _panel.Children.AddRange(next.Select(c => c.GetControl()));
+            var desired = _entries.Select(e => e.Comp.GetControl()).ToList();
+            var children = _panel.Children;
+            if (children.Count == 0)
+            {
+                // 初回は一括投入 (1 個ずつ Add すると子の数だけレイアウト無効化が走る)
+                children.AddRange(desired);
+                return;
+            }
+            // 消えた子を外してから並び順を合わせる。既存子の並べ替えは Move —
+            // detach/attach されないのでフォーカス等の状態が残る。
+            var keep = new HashSet<global::Avalonia.Controls.Control>(desired);
+            for (var i = children.Count - 1; i >= 0; i--)
+            {
+                if (!keep.Contains(children[i])) children.RemoveAt(i);
+            }
+            for (var i = 0; i < desired.Count; i++)
+            {
+                var idx = children.IndexOf(desired[i]);
+                if (idx == i) continue;
+                if (idx >= 0) children.Move(idx, i);
+                else children.Insert(i, desired[i]);
+            }
         }
         finally
         {
@@ -99,6 +107,6 @@ public sealed class ForComponent<T> : Component
     protected override void OnDispose()
     {
         _effect.Dispose();
-        foreach (var c in _children) c.Dispose();
+        foreach (var (_, c) in _entries) c.Dispose();
     }
 }

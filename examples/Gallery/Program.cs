@@ -31,6 +31,17 @@ class Program
         var answer = new Signal<string>("(not asked)");
         var path = new Signal<string>("(no file)");
 
+        // Tree タブ: 各ノードが自分の children Signal を持ち、変化したノードの
+        // サブツリーだけが更新される。選択ノードに Add child しても展開状態が残る
+        // (keyed diff によるノード再利用) ことの確認用。
+        var docs = new FsNode("docs");
+        docs.Children.Value = [new FsNode("readme.md"), new FsNode("spec.md")];
+        var src = new FsNode("src");
+        src.Children.Value = [new FsNode("main.cs")];
+        var roots = new Signal<IReadOnlyList<FsNode>>([docs, src]);
+        var selectedNode = new Signal<FsNode>(docs);
+        var childNo = 0;
+
         return new TabControl
         {
             { "Combo", new StackPanel
@@ -64,6 +75,27 @@ class Program
                              new FileFilter("All files", ["*.*"])]) ?? "(cancelled)"),
                     new TextBlock(() => $"file: {path.Value}"),
                 } },
+            { "Tree", new StackPanel
+                {
+                    TreeView.Of(
+                        () => roots.Value,
+                        n => $"{n.Name} ({n.Children.Value.Count})", // ラベルも子数にリアクティブ
+                        n => n.Children.Value,
+                        selected: selectedNode),
+                    new Button(() => "Add child", () =>
+                    {
+                        var target = selectedNode.Value;
+                        target.Children.Value = [.. target.Children.Value, new FsNode($"new-{++childNo}")];
+                    }),
+                    new Label(() => $"selected: {selectedNode.Value.Name}"),
+                } },
         };
     }
+}
+
+// Tree タブのノード。Name は不変、Children がノード内のリアクティブ状態。
+sealed class FsNode(string name)
+{
+    public string Name { get; } = name;
+    public Signal<IReadOnlyList<FsNode>> Children { get; } = new([]);
 }

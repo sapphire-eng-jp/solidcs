@@ -27,6 +27,9 @@ class Program
         var todos = new Signal<IReadOnlyList<TodoItem>>([]);
         var input = new Signal<string>("");
         var showStats = new Signal<bool>(true);
+        // 行 render の通し番号。keyed diff (For v2) で既存行の Component が再利用
+        // されることの実証用 — 行を増減しても既存行の #n が変わらない。
+        var renderCount = 0;
 
         void Add()
         {
@@ -45,9 +48,10 @@ class Program
                 { new Button(() => "Add", Add), Dock.Right },
                 new TextBox(input),
             },
-            // リスト本体。todos の差し替えで行が増減する (v1 は全破棄方式なので
-            // 増減のたびにチェック状態以外のアイテム内 UI 状態はリセットされる)
-            For.Each(() => todos.Value, todo => TodoRow(todos, todo)),
+            // リスト本体。todos の差し替えで行が増減する。key 省略時はアイテム自身
+            // (TodoItem は class なので参照) がキー — イミュータブル更新規約では
+            // 既存インスタンスが新リストにそのまま入るので、既存行は再利用される。
+            For.Each(() => todos.Value, todo => TodoRow(todos, todo, ++renderCount)),
             new CheckBox(showStats, () => "show stats"),
             new Show(() => showStats.Value,
                 () => new Label(() => $"done: {todos.Value.Count(t => t.Done.Value)} / {todos.Value.Count}"),
@@ -55,10 +59,10 @@ class Program
         };
     }
 
-    static Component TodoRow(Signal<IReadOnlyList<TodoItem>> todos, TodoItem todo) =>
+    static Component TodoRow(Signal<IReadOnlyList<TodoItem>> todos, TodoItem todo, int renderNo) =>
         new StackPanel(Orientation.Horizontal)
         {
-            new CheckBox(todo.Done, () => todo.Title),
+            new CheckBox(todo.Done, () => $"#{renderNo} {todo.Title}"),
             new Button(() => "x",
                 () => todos.Value = todos.Value.Where(t => t != todo).ToList()),
         };

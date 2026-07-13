@@ -1,6 +1,6 @@
 # 動的 children (For / Show) 設計案
 
-Status: **v1 実装済み** (2026-07-10。実装ステップ 1〜5 完了 — `Context.Untrack` + テスト、`Show`、`For.Each`、`examples/Todo`、GUI 実機確認まで。ステップ 6 の keyed diff 等は将来課題のまま)
+Status: **v2 (keyed diff) 実装済み** (2026-07-13)。v1 は 2026-07-10 (実装ステップ 1〜5 — `Context.Untrack` + テスト、`Show`、`For.Each`、`examples/Todo`、GUI 実機確認まで)。v2 で論点 3 の keyed diff を導入: 実装は internal な `KeyedDiff.Reconcile` (key 一致は再利用・新規だけ create・消えた分だけ dispose・重複 key は fail-fast・create 途中の throw は旧世代無傷) に切り出し、`ForComponent` と `TreeView` (各ノードの children reconcile) が共有する。key 省略時のデフォルトはアイテム自身 (イミュータブル更新規約では既存インスタンスが新リストに入るので参照で一致する)。再利用された子は再 render されない — アイテム内の変化はアイテム内の Signal で表現する規約。パネルへの反映は「消えた子を除去 → `Children.Move` / `Insert` で並び順を合わせる」差分適用で、位置が変わらない既存子は detach されずフォーカス等が残る。
 
 SolidJS の `<For>` / `<Show>` 相当を SolidCS.Avalonia に導入するための仕様案。
 現状のコンテナ (StackPanel / Grid 等) は構築時に子が固定で、「Signal の変化で
