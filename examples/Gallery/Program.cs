@@ -26,6 +26,11 @@ class Program
         // タブを離れても入力が消えない。ヘッダーはリアクティブに文字数を出す。
         var note = new Signal<string>("");
 
+        // Dialog タブ: async ダイアログ。await の続きは UI スレッドで再開されるので
+        // 結果をそのまま Signal に書き戻せる。
+        var answer = new Signal<string>("(not asked)");
+        var path = new Signal<string>("(no file)");
+
         return new TabControl
         {
             { "Combo", new StackPanel
@@ -44,6 +49,20 @@ class Program
                 {
                     new TextBlock(() => "Type here, switch tabs, and come back:"),
                     new TextBox(note),
+                } },
+            { "Dialog", new StackPanel
+                {
+                    new Button(() => "Message...", async () =>
+                        await Dialog.Message("Info", "Hello from SolidCS!")),
+                    new Button(() => "Confirm...", async () =>
+                        answer.Value = await Dialog.Confirm("Confirm", "Proceed with the operation?")
+                            ? "OK" : "Cancel"),
+                    new Label(() => $"answer: {answer.Value}"),
+                    new Button(() => "Open file...", async () =>
+                        path.Value = await Dialog.OpenFile("Choose a file",
+                            [new FileFilter("Text files", ["*.txt", "*.md"]),
+                             new FileFilter("All files", ["*.*"])]) ?? "(cancelled)"),
+                    new TextBlock(() => $"file: {path.Value}"),
                 } },
         };
     }
