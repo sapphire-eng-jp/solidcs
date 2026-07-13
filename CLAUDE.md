@@ -15,7 +15,8 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 - `examples/Form/` — 同上のサンプル。入力系コントロール (`TextBox` / `CheckBox`) と表示系 (`TextBlock` / `Label`) の双方向バインドおよびリアクティブ表示の動作確認用。root を `ScrollViewer` で包み、ウィンドウより縦長のリアクティブコンテンツでスクロールの動作確認も兼ねる。フォーム欄は `Grid` の auto-flow モード、統計 + サマリ行は explicit モード (colSpan 付き) で組んであり、Grid 両モードのデモでもある。さらに root の `WithFont(Func 版)` + A-/A+ ボタンで全体のフォントサイズを実行時に変えるデモと、挨拶行の静的 `WithFont` (20px Bold — 内側が勝つので root の変更に追従しない) のデモを兼ねる。Phase 1 コントロール群 (`Slider` / `NumericUpDown` / `ProgressBar` / `RadioGroup`) のデモ行もある — Slider と ProgressBar は同じ `Signal<double>` を共有し、値はサマリ行にリアクティブ反映される。
 - `examples/AppShell/` — 同上のサンプル。`DockPanel` でアプリの外枠 (ヘッダー Top / ステータスバー Bottom / サイドバー Left / メインコンテンツが残りを埋める) を組み、サイドバーのボタンで `Signal<string>` のページを切り替えるデモ。メインコンテンツには `WrapPanel` のタグボタンギャラリー (ウィンドウ幅で折り返し + クリックで selected 更新) も同居。
 - `examples/Todo/` — 同上のサンプル。動的 children (`For.Each` / `Show`) のデモ。TODO の追加・削除でリストの行が増減し (`Signal<IReadOnlyList<T>>` のイミュータブル更新規約)、完了数の統計行を `Show` (fallback 付き) で出し分ける。設計の経緯は `docs/dynamic-children-design.md`。
-- `SolidCS.sln` — 上記 7 プロジェクトを束ねる。`examples` は solution folder 配下。
+- `examples/Gallery/` — 同上のサンプル。選択系コントロール (`ComboBox` / `ListBox`) と `TabControl` のデモ。root が TabControl で、Combo タブ (静的 items)、List タブ (リアクティブ items — 追加ボタンで増える + 選択保持)、State タブ (TextBox 入力がタブ切替で消えない keepAlive 確認) の 3 タブ。タブヘッダーのリアクティブ表示 (`List (3)` 等) のデモも兼ねる。
+- `SolidCS.sln` — 上記 8 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
 
@@ -29,6 +30,7 @@ dotnet run --project examples/Counter                      # Counter サンプ�
 dotnet run --project examples/Form                         # Form サンプル起動 (TextBox/CheckBox の双方向バインド確認)
 dotnet run --project examples/AppShell                     # AppShell サンプル起動 (DockPanel レイアウト確認)
 dotnet run --project examples/Todo                         # Todo サンプル起動 (For/Show の動的 children 確認)
+dotnet run --project examples/Gallery                      # Gallery サンプル起動 (ComboBox/ListBox/TabControl 確認)
 dotnet publish examples/Counter -c Release                 # サンプルを AOT で発行
 ```
 
@@ -62,6 +64,10 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `Slider.cs` — `Signal<double> value` の双方向バインド。`min` / `max` (デフォルト 0〜100) は構造系オプション引数。イベントは `RangeBase.ValueChanged`。デフォルト `HorizontalAlignment` は `Stretch`。
 - `NumericUpDown.cs` — `Signal<decimal> value` の双方向バインド。`min` / `max` は `decimal?` で null = 「制限なし」(Avalonia デフォルトのまま)、`increment` (デフォルト 1)。`Value` は `decimal?` (テキスト欄を空にできる) なので `?? 0` で丸める。デフォルト `Stretch`。
 - `ProgressBar.cs` — 表示専用。`Func<double> valueFunc` のリアクティブ表示 (双方向ではない)。`min` / `max` オプション引数。デフォルト `Stretch`。
+- `SelectorBinding.cs` — internal。ComboBox / ListBox 共通の「items + 選択中 Signal」バインド。ItemsSource には labelFunc で変換した文字列リストを渡し、T との対応は SelectedIndex で取る (Avalonia のテンプレート機構を公開 API に露出させない)。items effect が ItemsSource を差し替えるとき選択が飛ぶので `selected` から再適用する — その読取は `Untrack` 内 (items effect に selected を購読させない)。ラベルは items 再構築時にだけ再計算される (RadioGroup と違いリアクティブではない)。「未選択」は selected の値が items にない状態 (SelectedIndex = -1) で表現し、Signal に null / default を書き戻すことはない (UI → Signal は index >= 0 のときだけ)。
+- `ComboBox.cs` — ドロップダウン選択。`ComboBox.Of(selected, items, labelFunc)` の static ファクトリ入口 (実体 `ComboBoxComponent<T>`)。items は `Func<IReadOnlyList<T>>` でリアクティブ (For と同じイミュータブル更新規約)。バインドは SelectorBinding に委譲。
+- `ListBox.cs` — 選択セマンティクス付きリスト。API は ComboBox と同型 (`ListBox.Of` / `ListBoxComponent<T>` / SelectorBinding 共有)。棲み分けは「選択が要るなら ListBox、ただの動的表示なら For」。
+- `TabControl.cs` — タブ切り替え。collection initializer の `{ header, content }` でタブを足す (header は静的 string / リアクティブ `Func<string>` の両対応)。content は全タブぶん構築時に作られてタブ切替でも生き続ける (keepAlive 相当 — 入力状態が保持される)。切替のたびに作り直したい場合は content を Show で包む。`Dispose()` は effect 解放 + 全 content へ伝播。
 - `RadioGroup.cs` — 排他選択のラジオボタン群。個々の RadioButton の bool を管理させず「`Signal<T> selected` + `IEnumerable<T> options` + `Func<T,string> labelFunc`」のグループ単位 API。入口は `RadioGroup.Of(...)` static ファクトリ (For.Each と同じ理由 — コンストラクタはジェネリック推論が効かない)、実体は `RadioGroupComponent<T>` (内部 StackPanel、`orientation` オプション引数はデフォルト `Vertical`)。RadioButton の排他は同一親コンテナ単位の自動グループ化に乗るので GroupName 不要 = 複数グループが干渉しない。UI → Signal は `IsChecked == true` の側だけ拾う (排他で外れる側の false は無視)。
 - `StackPanel.cs` — `Component` のコンテナ。`IEnumerable<Component>` 実装 + `Add(Component)` メソッドにより collection initializer 構文 (`new StackPanel { childA, childB }`) で子要素を渡せる。コンストラクタ引数で `Orientation` を渡せる (デフォルト `Vertical`)。`Dispose()` は全ての子に伝播する。
 - `Window.cs` — トップレベルウィンドウ。root の `Component` と `title` / `width` / `height` / `menu` (すべてオプション引数) を受け取り、`Closed` イベントで content (と menu) の `Dispose()` を呼ぶ配線まで内蔵する。`menu` を渡すと内部で `DockPanel` を作ってメニューバーを上端にドックし、残り全面を content が埋める (`LastChildFill`)。`Component` は継承しない (子として置けるものではないため)。Avalonia 側の `Window` は internal な `GetWindow()` で `App` だけが取り出す。
