@@ -34,7 +34,7 @@ static partial class Pages
             [new("Text files", ["*.txt", "*.md"]), new("All files", ["*.*"])];
         void SetPath(string? p) => path.Value = p ?? "(cancelled)";
         return Page("Dialog",
-            "Modal dialogs as async statics. The await continuation\nresumes on the UI thread, so results can be written straight\nback into a Signal. Button onClick takes an async lambda.",
+            "Modal dialogs as async statics. The await continuation resumes on the UI thread, so results can be written straight back into a Signal. Button onClick takes an async lambda.",
             new Button(() => "Message...", async () =>
                 await Dialog.Message("Info", "Hello from SolidCS!")),
             new Button(() => "Confirm...", async () =>
@@ -50,6 +50,6 @@ static partial class Pages
     }
 
     static Component MenuPage() => Page("Menu",
-        "The menu bar at the top of this window is a Menu passed to\nthe Window (menu: argument). Items have reactive headers —\nsee \"Page: ...\" update as you navigate. Try File > New.",
+        "The menu bar at the top of this window is a Menu passed to the Window (menu: argument). Items have reactive headers — see \"Page: ...\" update as you navigate. Try File > New.",
         new Label(() => $"last clicked: {MenuLog.Value}"));
 }

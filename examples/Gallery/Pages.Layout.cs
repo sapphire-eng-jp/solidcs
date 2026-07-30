@@ -9,7 +9,7 @@ namespace Gallery;
 static partial class Pages
 {
     static Component StackPanelPage() => Page("StackPanel",
-        "Stacks children in one direction. Vertical by default;\npass Orientation.Horizontal to go sideways. Nesting works.",
+        "Stacks children in one direction. Vertical by default; pass Orientation.Horizontal to go sideways. Nesting works.",
         new StackPanel(Orientation.Horizontal)
         {
             new Label(() => "[A]"), new Label(() => "[B]"), new Label(() => "[C]"),
@@ -29,13 +29,13 @@ static partial class Pages
             tags.Add(new Button(() => name, () => selected.Value = name));
         }
         return Page("WrapPanel",
-            "Lays children out in a row and wraps when the width runs\nout — resize the window to see the wrap point move.",
+            "Lays children out in a row and wraps when the width runs out — resize the window to see the wrap point move.",
             tags,
             new Label(() => $"selected: {selected.Value}"));
     }
 
     static Component DockPanelPage() => Page("DockPanel",
-        "Docks children to the edges; the last child fills the rest\n(lastChildFill). The Gallery shell itself is a DockPanel\nwith this sidebar docked Left.",
+        "Docks children to the edges; the last child fills the rest (lastChildFill). The Gallery shell itself is a DockPanel with this sidebar docked Left.",
         new DockPanel
         {
             { new Label(() => "[ Top ]"), Dock.Top },
@@ -49,7 +49,7 @@ static partial class Pages
     {
         var name = new Signal<string>("");
         return Page("Grid",
-            "Rows / columns via a mini-language (\"Auto\", \"*\", \"2*\",\n\"100\"). Auto-flow mode (rows omitted) flows children left to\nright; explicit mode places them with { child, row, col }.",
+            "Rows / columns via a mini-language (\"Auto\", \"*\", \"2*\", \"100\"). Auto-flow mode (rows omitted) flows children left to right; explicit mode places them with { child, row, col }.",
             new Grid(columns: "Auto,*")
             {
                 new Label(() => "Name"), new TextBox(name),
@@ -69,7 +69,7 @@ static partial class Pages
         var lines = string.Join("\n",
             Enumerable.Range(1, 40).Select(i => $"line {i,2} of 40"));
         return Page("ScrollViewer",
-            "Wraps a single child and makes it scrollable. This content\npane is itself a ScrollViewer — the lines below overflow the\nwindow, so scroll down.",
+            "Wraps a single child and makes it scrollable. This content pane is itself a ScrollViewer — the lines below overflow the window, so scroll down.",
             new TextBlock(() => lines));
     }
 }

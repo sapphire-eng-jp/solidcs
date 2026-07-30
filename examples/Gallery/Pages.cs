@@ -38,13 +38,13 @@ static partial class Pages
             .WithFont(new Font(Size: size, Weight: FontWeight.Bold));
 
     // ページ共通レイアウト: タイトル + 説明 + デモ本体。
-    // TextBlock は折り返さないので description は "\n" で手動改行する。
+    // description はペイン幅で自動折り返し (textWrapping: Wrap)。
     static Component Page(string title, string description, params Component[] demo)
     {
         var panel = new StackPanel
         {
             Heading(title, 22),
-            new TextBlock(() => description, HorizontalAlignment.Left),
+            new TextBlock(() => description, HorizontalAlignment.Left, TextWrapping.Wrap),
         };
         foreach (var c in demo) panel.Add(c);
         return panel;

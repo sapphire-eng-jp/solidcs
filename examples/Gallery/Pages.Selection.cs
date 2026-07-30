@@ -13,7 +13,7 @@ static partial class Pages
         var fruit = new Signal<string>("apple");
         string[] fruits = ["apple", "banana", "cherry", "durian"];
         return Page("ComboBox",
-            "Drop-down selection: Signal<T> + items + labelFunc. These\nitems are static (no Signal read — evaluated once).",
+            "Drop-down selection: Signal<T> + items + labelFunc. These items are static (no Signal read — evaluated once).",
             ComboBox.Of(fruit, () => fruits, f => f),
             new Label(() => $"selected: {fruit.Value}"),
             new Button(() => "select cherry from code", () => fruit.Value = "cherry"));
@@ -24,7 +24,7 @@ static partial class Pages
         var members = new Signal<IReadOnlyList<string>>(["Alice", "Bob"]);
         var member = new Signal<string>("Alice");
         return Page("ListBox",
-            "Same API as ComboBox. Items are reactive here — adding one\nrebuilds the list while the selection is kept.",
+            "Same API as ComboBox. Items are reactive here — adding one rebuilds the list while the selection is kept.",
             ListBox.Of(member, () => members.Value, m => m),
             new Button(() => "Add member",
                 () => members.Value = [.. members.Value, $"User{members.Value.Count + 1}"]),
@@ -42,7 +42,7 @@ static partial class Pages
         var childNo = 0;
 
         return Page("TreeView",
-            "Each node has its own children Signal; only the changed\nsubtree updates. Expand a node, add a child — the expansion\nstate survives (keyed diff reuses the TreeViewItem).",
+            "Each node has its own children Signal; only the changed subtree updates. Expand a node, add a child — the expansion state survives (keyed diff reuses the TreeViewItem).",
             TreeView.Of(
                 () => roots.Value,
                 n => $"{n.Name} ({n.Children.Value.Count})",

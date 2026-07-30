@@ -7,11 +7,13 @@ public sealed class TextBlock : Component
 
     public TextBlock(
         Func<string> textFunc,
-        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Center)
+        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Center,
+        TextWrapping textWrapping = TextWrapping.NoWrap)
     {
         _textBlock = new global::Avalonia.Controls.TextBlock
         {
             HorizontalAlignment = horizontalAlignment.ToAvalonia(),
+            TextWrapping = textWrapping.ToAvalonia(),
         };
         _effect = Context.Instance.RegisterEffect(
             () => _textBlock.Text = textFunc()

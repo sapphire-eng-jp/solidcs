@@ -13,7 +13,7 @@ static partial class Pages
     {
         var visible = new Signal<bool>(true);
         return Page("Show",
-            "Conditional rendering. Default is unmount (dispose and\nrebuild on toggle — state resets); keepAlive: true keeps the\ncomponent alive. Type in both boxes, then toggle twice.",
+            "Conditional rendering. Default is unmount (dispose and rebuild on toggle — state resets); keepAlive: true keeps the component alive. Type in both boxes, then toggle twice.",
             new CheckBox(visible, () => "mounted"),
             new Label(() => "unmount mode (input resets):", HorizontalAlignment.Left),
             new Show(() => visible.Value,
@@ -42,7 +42,7 @@ static partial class Pages
         }
 
         return Page("For",
-            "Dynamic list with keyed diff. Immutable update rule:\nassign a new list (todos.Value = [.. todos.Value, item]).\nExisting rows keep their #n — they are reused, not re-rendered.",
+            "Dynamic list with keyed diff. Immutable update rule: assign a new list (todos.Value = [.. todos.Value, item]). Existing rows keep their #n — they are reused, not re-rendered.",
             new DockPanel
             {
                 { new Button(() => "Add", Add), Dock.Right },
@@ -64,7 +64,7 @@ static partial class Pages
     {
         var note = new Signal<string>("");
         return Page("TabControl",
-            "Tabs via collection initializer { header, content }. All\ncontents are built once and stay alive (keepAlive) — the\ninput on the second tab survives switching. Headers can be\nreactive.",
+            "Tabs via collection initializer { header, content }. All contents are built once and stay alive (keepAlive) — the input on the second tab survives switching. Headers can be reactive.",
             new TabControl
             {
                 { "First", new Label(() => "static header, static content") },

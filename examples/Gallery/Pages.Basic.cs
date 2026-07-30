@@ -11,7 +11,7 @@ static partial class Pages
     {
         var count = new Signal<int>(0);
         return Page("Label",
-            "Caption control. The content func re-runs whenever a Signal\nread inside it changes.",
+            "Caption control. The content func re-runs whenever a Signal read inside it changes.",
             new Label(() => "static text"),
             new Label(() => $"reactive: clicked {count.Value} times"),
             new Button(() => "click me", () => count.Value += 1),
@@ -23,7 +23,7 @@ static partial class Pages
     {
         var count = new Signal<int>(0);
         return Page("TextBlock",
-            "Lightweight text display. Prefer this over Label for plain\nstrings — Text (string) is cheaper than Content (object).",
+            "Lightweight text display. Prefer this over Label for plain strings — Text (string) is cheaper than Content (object). Pass textWrapping: Wrap to word-wrap long text (page descriptions like this one use it).",
             new TextBlock(() => "line one\nline two\nline three (multi-line via \\n)"),
             new TextBlock(() => $"reactive: {count.Value * 2} = {count.Value} * 2"),
             new Button(() => "+1", () => count.Value += 1));
@@ -33,7 +33,7 @@ static partial class Pages
     {
         var count = new Signal<int>(0);
         return Page("Button",
-            "Content is reactive like Label. onClick is a plain Action\n(async lambdas are fine too — see the Dialog page).",
+            "Content is reactive like Label. onClick is a plain Action (async lambdas are fine too — see the Dialog page).",
             new Button(() => count.Value == 0 ? "never clicked" : $"clicked {count.Value} times",
                 () => count.Value += 1),
             new Button(() => "stretched", () => count.Value += 1, HorizontalAlignment.Stretch),
