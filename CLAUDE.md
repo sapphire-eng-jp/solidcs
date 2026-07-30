@@ -16,7 +16,8 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 - `examples/AppShell/` — 同上のサンプル。`DockPanel` でアプリの外枠 (ヘッダー Top / ステータスバー Bottom / サイドバー Left / メインコンテンツが残りを埋める) を組み、サイドバーのボタンで `Signal<string>` のページを切り替えるデモ。メインコンテンツには `WrapPanel` のタグボタンギャラリー (ウィンドウ幅で折り返し + クリックで selected 更新) も同居。
 - `examples/Todo/` — 同上のサンプル。動的 children (`For.Each` / `Show`) のデモ。TODO の追加・削除でリストの行が増減し (`Signal<IReadOnlyList<T>>` のイミュータブル更新規約)、完了数の統計行を `Show` (fallback 付き) で出し分ける。行ラベルの `#n` は render 通し番号 — keyed diff (For v2) で既存行が再利用され増減後も番号が変わらないことの実証用。設計の経緯は `docs/dynamic-children-design.md`。
 - `examples/Gallery/` — 同上のサンプル。対応する全コンポーネントのショーケース (よくある GUI ツールキットのギャラリースタイル)。左ペインはカテゴリ見出し + カテゴリ別 `ListBox` 群で、**全 ListBox が 1 つの `page` Signal を共有**する — SelectorBinding の「selected の値が items に無い状態 = 未選択」仕様により、他カテゴリの項目を選ぶと前のカテゴリの選択表示が自然に外れる。右ペインは page の値を**単一要素の keyed リストとして `For.Each` に渡すページスイッチャ** — page が変わると key が変わり、keyed diff が旧ページを Dispose して新ページだけを構築する (unmount 切替が O(1)、名前→ファクトリ索引は ToDictionary なので Name 重複は起動時に fail-fast) — を `ScrollViewer` で包んだもの。Basic / Input / Selection / Display / Layout / Dynamic / Window の 7 カテゴリ 22 ページで、各ページはタイトル + 説明 + 動作デモ (`Pages.Page(...)` 共通レイアウト)。ページ一覧 (`Pages.Catalog`) が sidebar とページ切替の両方の源。Window の `menu` 引数のデモも兼ねる — メニューバー (`Pages.MainMenu`) のクリック結果は private な MenuLog Signal 経由で Menu ページに表示され (両方 Pages.Window.cs 内で完結)、トップレベル項目 `Page: ...` はリアクティブ header のデモ。実装は `Program.cs` (shell) + `Pages.cs` (Catalog + 共通レイアウト) + `Pages.{Basic,Input,Selection,Display,Layout,Dynamic,Window}.cs` (カテゴリ別 partial class)。
-- `SolidCS.sln` — 上記 8 プロジェクトを束ねる。`examples` は solution folder 配下。
+- `examples/CounterVB/` — Counter の VB.NET 移植 (`WinExe`、`PublishAot` なし — VB は Native AOT 非対応)。ライブラリが VB から使えることの実証用。VB 側の流儀: collection initializer は `From { ... }` (DockPanel 等の複数引数 Add はネスト波括弧)、ラムダは `Function()` / `Sub()`、named argument は `:=`。`For` クラスは VB の予約語なので使うときは `[For].Each(...)` とエスケープする (このサンプルでは未使用)。
+- `SolidCS.sln` — 上記 9 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
 
@@ -27,6 +28,7 @@ dotnet build SolidCS.sln                                   # ソリューショ�
 dotnet test SolidCS.Tests                                  # 全テスト実行
 dotnet test SolidCS.Tests --filter "FullyQualifiedName~SignalTests.SubscribeTest"   # 単一テスト
 dotnet run --project examples/Counter                      # Counter サンプル起動
+dotnet run --project examples/CounterVB                    # Counter の VB.NET 版を起動 (VB からの利用確認)
 dotnet run --project examples/Form                         # Form サンプル起動 (TextBox/CheckBox の双方向バインド確認)
 dotnet run --project examples/AppShell                     # AppShell サンプル起動 (DockPanel レイアウト確認)
 dotnet run --project examples/Todo                         # Todo サンプル起動 (For/Show の動的 children 確認)
