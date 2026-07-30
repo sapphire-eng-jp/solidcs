@@ -16,8 +16,9 @@ SolidJS 風の Signal / Effect ベースのリアクティブプリミティブ�
 - `examples/AppShell/` — 同上のサンプル。`DockPanel` でアプリの外枠 (ヘッダー Top / ステータスバー Bottom / サイドバー Left / メインコンテンツが残りを埋める) を組み、サイドバーのボタンで `Signal<string>` のページを切り替えるデモ。メインコンテンツには `WrapPanel` のタグボタンギャラリー (ウィンドウ幅で折り返し + クリックで selected 更新) も同居。
 - `examples/Todo/` — 同上のサンプル。動的 children (`For.Each` / `Show`) のデモ。TODO の追加・削除でリストの行が増減し (`Signal<IReadOnlyList<T>>` のイミュータブル更新規約)、完了数の統計行を `Show` (fallback 付き) で出し分ける。行ラベルの `#n` は render 通し番号 — keyed diff (For v2) で既存行が再利用され増減後も番号が変わらないことの実証用。設計の経緯は `docs/dynamic-children-design.md`。
 - `examples/Gallery/` — 同上のサンプル。対応する全コンポーネントのショーケース (よくある GUI ツールキットのギャラリースタイル)。左ペインはカテゴリ見出し + カテゴリ別 `ListBox` 群で、**全 ListBox が 1 つの `page` Signal を共有**する — SelectorBinding の「selected の値が items に無い状態 = 未選択」仕様により、他カテゴリの項目を選ぶと前のカテゴリの選択表示が自然に外れる。右ペインは page の値を**単一要素の keyed リストとして `For.Each` に渡すページスイッチャ** — page が変わると key が変わり、keyed diff が旧ページを Dispose して新ページだけを構築する (unmount 切替が O(1)、名前→ファクトリ索引は ToDictionary なので Name 重複は起動時に fail-fast) — を `ScrollViewer` で包んだもの。Basic / Input / Selection / Display / Layout / Dynamic / Window の 7 カテゴリ 22 ページで、各ページはタイトル + 説明 + 動作デモ (`Pages.Page(...)` 共通レイアウト)。ページ一覧 (`Pages.Catalog`) が sidebar とページ切替の両方の源。Window の `menu` 引数のデモも兼ねる — メニューバー (`Pages.MainMenu`) のクリック結果は private な MenuLog Signal 経由で Menu ページに表示され (両方 Pages.Window.cs 内で完結)、トップレベル項目 `Page: ...` はリアクティブ header のデモ。実装は `Program.cs` (shell) + `Pages.cs` (Catalog + 共通レイアウト) + `Pages.{Basic,Input,Selection,Display,Layout,Dynamic,Window}.cs` (カテゴリ別 partial class)。
+- `examples/Autosave/` — 同上のサンプル。**ライブラリ利用者が `Context.RegisterEffect` を直接呼ぶ**例 (他のサンプルはコンポーネント内蔵の effect だけで完結している)。メモ (`TextBox` の `multiline: true`) の内容 Signal を effect で watch してファイルへ自動保存し、保存時刻をステータス行にリアクティブ表示する — UI 以外の副作用 (ファイル I/O) を Signal に反応させるのが RegisterEffect を直接使う典型パターン、という位置づけ。effect 冒頭で `enabled` Signal (Autosave チェックボックス) を見て false なら text を読まずに抜けることで、依存の動的再追跡 (オフの間は保存が走らず、再オンで最新内容がまとめて保存される) のデモも兼ねる。外枠は `DockPanel` (ヘッダー Top / ステータス Bottom / メモ欄が残りを fill)。
 - `examples/CounterVB/` — Counter の VB.NET 移植 (`WinExe`、`PublishAot` なし — VB は Native AOT 非対応)。ライブラリが VB から使えることの実証用。VB 側の流儀: collection initializer は `From { ... }` (DockPanel 等の複数引数 Add はネスト波括弧)、ラムダは `Function()` / `Sub()`、named argument は `:=`。`For` クラスは VB の予約語なので使うときは `[For].Each(...)` とエスケープする (このサンプルでは未使用)。
-- `SolidCS.sln` — 上記 9 プロジェクトを束ねる。`examples` は solution folder 配下。
+- `SolidCS.sln` — 上記 10 プロジェクトを束ねる。`examples` は solution folder 配下。
 
 ## よく使うコマンド
 
@@ -33,6 +34,7 @@ dotnet run --project examples/Form                         # Form サンプル�
 dotnet run --project examples/AppShell                     # AppShell サンプル起動 (DockPanel レイアウト確認)
 dotnet run --project examples/Todo                         # Todo サンプル起動 (For/Show の動的 children 確認)
 dotnet run --project examples/Gallery                      # Gallery サンプル起動 (ComboBox/ListBox/TabControl 確認)
+dotnet run --project examples/Autosave                     # Autosave サンプル起動 (ユーザー定義 effect の確認)
 dotnet publish examples/Counter -c Release                 # サンプルを AOT で発行
 ```
 
@@ -61,7 +63,7 @@ dotnet publish examples/Counter -c Release                 # サンプルを AOT
 - `Label.cs` — `Func<string> contentFunc` を受け取って `Context.Instance.RegisterEffect(() => _label.Content = contentFunc())` を呼ぶ。effect 内で読まれた Signal が変わると Label が自動更新される。`Dispose()` で effect を解放。第 2 引数で `HorizontalAlignment` を渡せる (デフォルト `Center`)。
 - `TextBlock.cs` — Label の TextBlock 版。表示専用テキストでは Label の `Content` (object) より TextBlock の `Text` (string) の方が軽量で素直なのでこちらを使う。API は Label と同じ + 第 3 引数 `textWrapping` (自前 `TextWrapping` 列挙型、デフォルト `NoWrap` = Avalonia デフォルト) で折り返しを指定できる。
 - `Button.cs` — `Func<string> contentFunc` と `Action onClick` を受け取り、Content は Label と同じく effect でリアクティブに更新する。第 3 引数で `HorizontalAlignment` を渡せる (デフォルト `Center`)。
-- `TextBox.cs` — `Signal<string> value` を受け取り、**双方向バインド**する。effect で Signal → UI、`TextChanged` ハンドラで UI → Signal。Signal の setter の equality check で循環が止まるので effect 経由の代入が引き起こす TextChanged のエコーは無限ループにならない。デフォルト `HorizontalAlignment` は `Stretch` (入力欄は幅いっぱい使う想定)。
+- `TextBox.cs` — `Signal<string> value` を受け取り、**双方向バインド**する。effect で Signal → UI、`TextChanged` ハンドラで UI → Signal。Signal の setter の equality check で循環が止まるので effect 経由の代入が引き起こす TextChanged のエコーは無限ループにならない。デフォルト `HorizontalAlignment` は `Stretch` (入力欄は幅いっぱい使う想定)。第 3 引数 `multiline` (デフォルト false) で複数行モード — AcceptsReturn + 折り返し + コンテンツ上寄せ (縦に stretch されたときテキストが縦中央に浮かないように) をまとめて設定する。
 - `CheckBox.cs` — `Signal<bool> value` と `Func<string> contentFunc` を受け取り、value は双方向バインド、content はリアクティブ表示。`IsChecked` は `bool?` (Indeterminate あり) だが Signal<bool> に丸めるため `?? false`。イベントは `ToggleButton.IsCheckedChanged`。
 - `Slider.cs` — `Signal<double> value` の双方向バインド。`min` / `max` (デフォルト 0〜100) は構造系オプション引数。イベントは `RangeBase.ValueChanged`。デフォルト `HorizontalAlignment` は `Stretch`。
 - `NumericUpDown.cs` — `Signal<decimal> value` の双方向バインド。`min` / `max` は `decimal?` で null = 「制限なし」(Avalonia デフォルトのまま)、`increment` (デフォルト 1)。`Value` は `decimal?` (テキスト欄を空にできる) なので `?? 0` で丸める。デフォルト `Stretch`。

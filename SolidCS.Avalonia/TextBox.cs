@@ -7,12 +7,21 @@ public sealed class TextBox : Component
 
     public TextBox(
         Signal<string> value,
-        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Stretch)
+        HorizontalAlignment horizontalAlignment = HorizontalAlignment.Stretch,
+        bool multiline = false)
     {
         _textBox = new global::Avalonia.Controls.TextBox
         {
             HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
+        if (multiline)
+        {
+            // 複数行モード: Enter で改行を受け付け、行は折り返す。縦に伸ばされた
+            // とき (DockPanel の fill 等) にテキストが縦中央に浮かないよう上寄せ。
+            _textBox.AcceptsReturn = true;
+            _textBox.TextWrapping = global::Avalonia.Media.TextWrapping.Wrap;
+            _textBox.VerticalContentAlignment = global::Avalonia.Layout.VerticalAlignment.Top;
+        }
         // Signal → UI: 他所で value.Value が更新されたら TextBox に反映
         _effect = Context.Instance.RegisterEffect(
             () => _textBox.Text = value.Value
