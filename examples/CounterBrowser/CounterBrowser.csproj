@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SolidCS\SolidCS.csproj" />
+    <ProjectReference Include="..\..\SolidCS.Avalonia\SolidCS.Avalonia.csproj" />
+  </ItemGroup>
+</Project>
