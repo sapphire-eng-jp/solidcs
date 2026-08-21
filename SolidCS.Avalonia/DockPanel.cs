@@ -16,8 +16,8 @@ public sealed class DockPanel : Component, IEnumerable<Component>
     }
 
     /// <summary>
-    /// Dock 指定なしで子を追加する。Avalonia のデフォルト (Left) 扱いだが、
-    /// 最後の子は lastChildFill (デフォルト true) により残り全面を埋める。
+    /// Adds a child without a Dock value. It gets Avalonia's default (Left), but the
+    /// last child fills the remaining space when lastChildFill is true (the default).
     /// </summary>
     public void Add(Component child)
     {

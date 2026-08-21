@@ -7,8 +7,9 @@ using SolidCS.Avalonia;
 
 namespace Gallery;
 
-// 対応コンポーネントのショーケース。左ペインのコントロール一覧 (カテゴリ別 ListBox)
-// で選択し、右ペインに該当ページを表示する。ページの実体は Pages.*.cs にある。
+// Showcase of the supported components. Pick a control from the left pane
+// (per-category ListBoxes) and the matching page shows in the right pane.
+// The pages themselves live in Pages.*.cs.
 class Program
 {
     [STAThread]
@@ -25,9 +26,10 @@ class Program
                 menu: Pages.MainMenu(page));
         });
 
-    // 左ペイン: カテゴリ見出し + ListBox。全 ListBox が同じ page Signal を共有する —
-    // SelectorBinding は「selected の値が items に無い状態 = 未選択 (-1)」なので、
-    // 他カテゴリの項目を選ぶと前のカテゴリの選択表示が自然に外れる。
+    // Left pane: category headings + ListBoxes. All ListBoxes share the same page
+    // Signal — SelectorBinding treats "selected value not in items" as
+    // unselected (-1), so picking an item in another category naturally clears
+    // the previous category's selection highlight.
     static Component Sidebar(Signal<string> page)
     {
         var panel = new StackPanel();
@@ -40,10 +42,11 @@ class Program
         return new ScrollViewer(panel);
     }
 
-    // 右ペイン: page の値を単一要素の keyed リストとして For に渡すページスイッチャ。
-    // page が変わると key が変わり、keyed diff が旧ページを Dispose して新ページ
-    // だけを構築する (unmount 切替)。名前→ファクトリの索引は ToDictionary なので
-    // Name の重複はここで fail-fast。
+    // Right pane: a page switcher that feeds the page value to For as a
+    // single-element keyed list. When page changes, the key changes, and the
+    // keyed diff disposes the old page and builds only the new one (unmount
+    // switching). The name-to-factory index is a ToDictionary, so duplicate
+    // Names fail fast here.
     static Component Content(Signal<string> page)
     {
         var byName = Pages.Catalog

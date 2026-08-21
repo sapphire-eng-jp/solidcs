@@ -1,10 +1,12 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// For / TreeView 共通の keyed reconcile。key 一致の既存 state を再利用し、
-/// 新規 key だけ create、消えた key だけ dispose する。key の重複は fail-fast。
-/// create が途中で throw した場合はそのラウンドで作った state だけ dispose して
-/// 再 throw する — 呼び元の current は無傷のまま残る (旧世代を壊さない保証)。
+/// Keyed reconcile shared by For and TreeView. Existing state with a matching
+/// key is reused; only new keys are created and only departed keys are
+/// disposed. Duplicate keys fail fast.
+/// If create throws partway through, only the state created in that round is
+/// disposed and the exception is re-thrown — the caller's current stays
+/// untouched (guaranteeing the old generation is never broken).
 /// </summary>
 internal static class KeyedDiff
 {
@@ -29,7 +31,7 @@ internal static class KeyedDiff
                 if (!used.Add(k))
                 {
                     throw new InvalidOperationException(
-                        $"keyed diff の key が重複している ({k})。key: で一意なキーを指定すること。");
+                        $"Duplicate key in keyed diff ({k}). Specify a unique key via key:.");
                 }
                 if (oldByKey.TryGetValue(k, out var s))
                 {

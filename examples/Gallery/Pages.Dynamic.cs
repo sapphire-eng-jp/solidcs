@@ -29,8 +29,8 @@ static partial class Pages
     {
         var todos = new Signal<IReadOnlyList<TodoItem>>([new("try the gallery")]);
         var input = new Signal<string>("");
-        // render 通し番号 — keyed diff で既存行が再利用され、増減しても既存行の
-        // #n が変わらないことの実証用。
+        // Running render number — demonstrates that the keyed diff reuses existing
+        // rows: their #n does not change as rows are added or removed.
         var renderCount = 0;
 
         void Add()
@@ -77,7 +77,7 @@ static partial class Pages
     }
 }
 
-// For ページの行アイテム。Title は不変、Done だけがアイテム内のリアクティブ状態。
+// Row item for the For page. Title is immutable; Done is the item's only piece of reactive state.
 sealed class TodoItem(string title)
 {
     public string Title { get; } = title;

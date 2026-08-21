@@ -1,14 +1,16 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// 動的ツリー。各ノードが自分の children effect を持ち、childrenFunc 内で読まれた
-/// Signal が変わったノードのサブツリーだけが keyed diff (For v2 と同じ Reconcile)
-/// で更新される — key 一致のノードは TreeViewItem ごと再利用されるので展開状態が
-/// 生き残る。label はノード単位の effect でリアクティブ。selected を渡すと
-/// 選択の双方向バインド (「未選択」は selected の値がツリー内に無い状態で表現し、
-/// Signal に null / default を書き戻すことはない)。
-/// 入口は `TreeView.Of(...)` static ファクトリ (コンストラクタはジェネリック推論が
-/// 効かない)。key 省略時はアイテム自身がキー (重複は fail-fast)。
+/// Dynamic tree. Each node owns its own children effect, and only the subtree
+/// of the node whose Signal (read inside childrenFunc) changed is updated via
+/// keyed diff (the same Reconcile as For v2) — nodes with matching keys reuse
+/// their TreeViewItem, so expansion state survives. Labels are reactive via a
+/// per-node effect. Passing selected enables two-way selection binding
+/// ("no selection" is represented by the selected value not being present in
+/// the tree; null / default is never written back to the Signal).
+/// The entry point is the `TreeView.Of(...)` static factory (constructors
+/// can't infer generic type arguments). When key is omitted, the item itself
+/// is the key (duplicates fail fast).
 /// </summary>
 public static class TreeView
 {
@@ -27,8 +29,8 @@ public sealed class TreeViewComponent<T> : Component
     private readonly Func<T, string> _labelFunc;
     private readonly Func<T, IReadOnlyList<T>> _childrenFunc;
     private readonly Func<T, object> _keyFn;
-    // 選択の T ⇔ TreeViewItem 変換用。key は兄弟間でしか一意でないため
-    // ツリー全体の逆引きはこの map で行う。
+    // For converting between T and TreeViewItem for selection. Keys are only
+    // unique among siblings, so tree-wide reverse lookup goes through this map.
     private readonly Dictionary<global::Avalonia.Controls.TreeViewItem, T> _itemMap = new();
     private readonly IDisposable _rootsEffect;
     private readonly IDisposable? _selectionEffect;
@@ -49,13 +51,13 @@ public sealed class TreeViewComponent<T> : Component
 
         _rootsEffect = Context.Instance.RegisterEffect(() =>
         {
-            var list = roots(); // ここで読まれたルートリストの Signal だけを追跡
+            var list = roots(); // track only the root-list Signal read here
             Context.Instance.Untrack(() =>
             {
                 if (_rebuilding)
                 {
                     throw new InvalidOperationException(
-                        "TreeView の構築中にルートの Signal が書かれた (再入)。");
+                        "The roots Signal was written while TreeView was being built (re-entrancy).");
                 }
                 _rebuilding = true;
                 try
@@ -75,7 +77,7 @@ public sealed class TreeViewComponent<T> : Component
 
         if (selected is not null)
         {
-            // Signal → UI: 値に対応する TreeViewItem を逆引きして選択
+            // Signal → UI: reverse-look up the TreeViewItem for the value and select it
             _selectionEffect = Context.Instance.RegisterEffect(() =>
             {
                 var v = selected.Value;
@@ -90,7 +92,8 @@ public sealed class TreeViewComponent<T> : Component
                 }
                 _tree.SelectedItem = found;
             });
-            // UI → Signal: 実選択だけ書き戻す。エコーは equality check で止まる。
+            // UI → Signal: write back only real selections. Echoes are stopped
+            // by the equality check.
             _tree.SelectionChanged += (_, _) =>
             {
                 if (_tree.SelectedItem is global::Avalonia.Controls.TreeViewItem tvi
@@ -102,10 +105,11 @@ public sealed class TreeViewComponent<T> : Component
         }
     }
 
-    // ItemCollection (ルート / 各ノード共通) を desired の並びに合わせる。
-    // 消えたものを外してから位置を合わせる。ItemCollection に Move は無いので
-    // 並べ替えは RemoveAt + Insert (TreeViewItem の IsExpanded はプロパティなので
-    // detach/attach をまたいで保持される)。
+    // Bring an ItemCollection (roots and per-node alike) in line with the
+    // desired order. Remove departed items first, then fix up positions.
+    // ItemCollection has no Move, so reordering is RemoveAt + Insert
+    // (TreeViewItem's IsExpanded is a property, so it survives across
+    // detach/attach).
     internal static void PatchItems(
         global::Avalonia.Controls.ItemCollection items, List<object> desired)
     {
@@ -132,7 +136,7 @@ public sealed class TreeViewComponent<T> : Component
         foreach (var (_, n) in _roots) n.Dispose();
     }
 
-    // ツリーの 1 ノード。TreeViewItem + label effect + children effect (keyed diff)。
+    // A single tree node: TreeViewItem + label effect + children effect (keyed diff).
     private sealed class Node : IDisposable
     {
         internal readonly global::Avalonia.Controls.TreeViewItem Item = new();
@@ -151,13 +155,13 @@ public sealed class TreeViewComponent<T> : Component
             );
             _childrenEffect = Context.Instance.RegisterEffect(() =>
             {
-                var list = owner._childrenFunc(value); // このノードの children Signal だけを追跡
+                var list = owner._childrenFunc(value); // track only this node's children Signal
                 Context.Instance.Untrack(() =>
                 {
                     if (_rebuilding)
                     {
                         throw new InvalidOperationException(
-                            "TreeView のノード構築中に children の Signal が書かれた (再入)。");
+                            "The children Signal was written while a TreeView node was being built (re-entrancy).");
                     }
                     _rebuilding = true;
                     try

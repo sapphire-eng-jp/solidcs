@@ -7,15 +7,15 @@ public sealed class Context
 {
     public static Context Instance {get;} = new();
 
-    // 論理フロー (UI スレッド / async chain) ごとに別インスタンスを持たせることで、
-    // effect 登録時に外側ロックを取らなくても Push/Pop が壊れないようにしている。
+    // Each logical flow (UI thread / async chain) gets its own instance, so Push/Pop
+    // stays safe during effect registration without taking an outer lock.
     private static readonly AsyncLocal<Stack<Effect>> _subscribers = new();
 
     public Stack<Effect> Subscribers => _subscribers.Value ??= new Stack<Effect>();
 
     public IDisposable RegisterEffect(Action callback)
     {
-        // Push/Pop と依存追跡は Effect.Run() に集約してあるので、ここでは Run を 1 回起動するだけ。
+        // Push/Pop and dependency tracking are centralized in Effect.Run(), so all we do here is kick off Run once.
         var effect = new Effect(callback);
         try
         {
@@ -23,18 +23,20 @@ public sealed class Context
         }
         catch
         {
-            // 初回 Run が途中で throw すると呼び元はハンドルを受け取れず、途中まで
-            // 張られた購読を解除する手段がなくなる。ここで解除してから再 throw する。
+            // If the initial Run throws partway through, the caller never receives the handle
+            // and has no way to release the subscriptions set up so far. Release them here,
+            // then rethrow.
             effect.Dispose();
             throw;
         }
         return effect;
     }
 
-    // 依存追跡を切った状態で func を実行する。effect の中で子 Component を構築するとき、
-    // 子のコンストラクタで読まれた Signal が外側の effect に購読される過追跡を防ぐのに使う。
-    // 番兵 (null) を積む方式ではなくスタックごと空に差し替える方式なのは、Untrack 中の
-    // RegisterEffect (子構築) が新しい空スタック上でそのまま正しく依存追跡できるようにするため。
+    // Runs func with dependency tracking disabled. Used when building child Components inside
+    // an effect, to prevent over-tracking where Signals read in a child's constructor get
+    // subscribed to the outer effect. We swap in a fresh empty stack rather than pushing a
+    // sentinel (null) so that RegisterEffect calls during Untrack (child construction) can
+    // still track their own dependencies correctly on the new empty stack.
     public T Untrack<T>(Func<T> func)
     {
         var saved = _subscribers.Value;
@@ -45,8 +47,8 @@ public sealed class Context
         }
         finally
         {
-            // saved は未初期化フローだと null (AsyncLocal の未設定状態)。その場合は
-            // null を戻して未設定状態を復元するのが正しい。
+            // saved is null on a flow that was never initialized (AsyncLocal's unset state).
+            // In that case, restoring null to bring back the unset state is correct.
             _subscribers.Value = saved!;
         }
     }

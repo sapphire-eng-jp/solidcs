@@ -65,7 +65,7 @@ static partial class Pages
 
     static Component ScrollViewerPage()
     {
-        // Signal を読まない静的コンテンツ — 構築時に一度だけ組み立てる
+        // Static content that reads no Signal — built once at construction time
         var lines = string.Join("\n",
             Enumerable.Range(1, 40).Select(i => $"line {i,2} of 40"));
         return Page("ScrollViewer",

@@ -103,13 +103,13 @@ public class SignalTests
 
         Assert.Equal(1, runs);
 
-        // flag=true なので a の変更で再実行されるが、b の変更ではされない。
+        // While flag=true, changing a re-runs the effect, but changing b does not.
         a.Value = 1;
         Assert.Equal(2, runs);
         b.Value = 1;
         Assert.Equal(2, runs);
 
-        // flag を反転すると以後は b に依存して a には依存しなくなる。
+        // After flipping flag, the effect depends on b and no longer on a.
         flag.Value = false;
         Assert.Equal(3, runs);
         a.Value = 99;
@@ -130,8 +130,8 @@ public class SignalTests
         {
             _ = s.Value;
             aRuns++;
-            // 通知中の最初の re-run で b を Dispose する。スナップショットは [A, B] のままだが
-            // B.Run() は _disposed=true で早期 return するので bRuns は増えないはず。
+            // Dispose b during the first re-run of the notification. The snapshot is still [A, B],
+            // but B.Run() should early-return because _disposed=true, so bRuns must not increase.
             if (aRuns == 2) handleB!.Dispose();
         });
         handleB = Context.Instance.RegisterEffect(() =>

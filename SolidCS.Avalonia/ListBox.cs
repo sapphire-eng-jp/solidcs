@@ -1,8 +1,8 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// 選択セマンティクス付きのリスト。API は ComboBox と同型 (SelectorBinding を共有)。
-/// 「選択が要るなら ListBox、ただの動的表示なら For」の棲み分け。
+/// A list with selection semantics. The API mirrors ComboBox (shares SelectorBinding).
+/// Division of labor: use ListBox when you need selection, For for plain dynamic display.
 /// </summary>
 public static class ListBox
 {

@@ -7,7 +7,7 @@ public sealed class WrapPanel : Component, IEnumerable<Component>
     private readonly global::Avalonia.Controls.WrapPanel _wrap;
     private readonly List<Component> _children = new();
 
-    // デフォルトは Avalonia と同じ Horizontal (StackPanel の Vertical とは逆) 。
+    // Default is Horizontal, matching Avalonia (the opposite of StackPanel's Vertical).
     public WrapPanel(Orientation orientation = Orientation.Horizontal)
     {
         _wrap = new global::Avalonia.Controls.WrapPanel

@@ -1,31 +1,32 @@
 namespace SolidCS.Avalonia;
 
-/// <summary>ファイルダイアログの拡張子フィルタ。Patterns は "*.txt" 形式。</summary>
+/// <summary>Extension filter for file dialogs. Patterns use the "*.txt" form.</summary>
 public sealed record FileFilter(string Name, string[] Patterns);
 
 /// <summary>
-/// モーダルダイアログ。すべて async で、await の続きは Avalonia の
-/// SynchronizationContext により UI スレッドで再開されるので、結果をそのまま
-/// Signal に書き戻してよい。Button の onClick (Action) には async ラムダを渡す。
-/// owner は App.Run が表示したメインウィンドウ — それ以前の呼び出しは
-/// InvalidOperationException で fail-fast。
+/// Modal dialogs. All methods are async, and the continuation after await resumes
+/// on the UI thread via Avalonia's SynchronizationContext, so the result can be
+/// written straight back into a Signal. Pass an async lambda as a Button's
+/// onClick (Action).
+/// The owner is the main window shown by App.Run — calling before that
+/// fails fast with InvalidOperationException.
 /// </summary>
 public static class Dialog
 {
     private static global::Avalonia.Controls.Window Owner =>
         App.MainWindow ?? throw new InvalidOperationException(
-            "Dialog は App.Run がメインウィンドウを表示した後にのみ使える。");
+            "Dialog can be used only after App.Run has shown the main window.");
 
-    /// <summary>OK ボタンだけの通知ダイアログ。</summary>
+    /// <summary>Notification dialog with only an OK button.</summary>
     public static Task Message(string title, string message, string ok = "OK")
         => ShowBox(title, message, ok, cancelText: null);
 
-    /// <summary>OK / Cancel の確認ダイアログ。X で閉じた場合は false。</summary>
+    /// <summary>OK / Cancel confirmation dialog. Closing with the X returns false.</summary>
     public static Task<bool> Confirm(
         string title, string message, string ok = "OK", string cancel = "Cancel")
         => ShowBox(title, message, ok, cancel);
 
-    /// <summary>ファイルを開くダイアログ。選択されたパスを返す。キャンセルは null。</summary>
+    /// <summary>Open-file dialog. Returns the selected path, or null on cancel.</summary>
     public static async Task<string?> OpenFile(
         string title = "Open", IReadOnlyList<FileFilter>? filters = null)
     {
@@ -41,7 +42,7 @@ public static class Dialog
             : null;
     }
 
-    /// <summary>名前を付けて保存ダイアログ。選択されたパスを返す。キャンセルは null。</summary>
+    /// <summary>Save-as dialog. Returns the selected path, or null on cancel.</summary>
     public static async Task<string?> SaveFile(
         string title = "Save",
         string? suggestedName = null,
@@ -67,9 +68,9 @@ public static class Dialog
                 Patterns = f.Patterns,
             }).ToList();
 
-    // Message / Confirm 共通の実装。Avalonia に MessageBox が無いので小さな
-    // モーダル Window を組む。中身は静的 (リアクティブ性なし) なので Component は
-    // 使わず素の Avalonia コントロールで済ませる。
+    // Shared implementation for Message / Confirm. Avalonia has no MessageBox,
+    // so we build a small modal Window. The content is static (no reactivity),
+    // so plain Avalonia controls suffice — no Components involved.
     private static async Task<bool> ShowBox(
         string title, string message, string okText, string? cancelText)
     {
@@ -82,9 +83,9 @@ public static class Dialog
             ShowInTaskbar = false,
             WindowStartupLocation =
                 global::Avalonia.Controls.WindowStartupLocation.CenterOwner,
-            // owner が常に最前面 (Topmost) だと非 topmost のダイアログは owner の
-            // 裏に開いてしまい「見えないモーダルに親がロックされる」事故になる。
-            // owner の Topmost を継承して同じ z-order 帯に出す。
+            // If the owner is always-on-top (Topmost), a non-topmost dialog opens
+            // behind it — an "invisible modal locks its parent" accident. Inherit
+            // the owner's Topmost so the dialog appears in the same z-order band.
             Topmost = owner.Topmost,
         };
         var text = new global::Avalonia.Controls.TextBlock
@@ -101,7 +102,7 @@ public static class Dialog
             Spacing = 8,
             Margin = new global::Avalonia.Thickness(24, 20, 24, 20),
         };
-        // IsDefault / IsCancel で Enter / Esc がそのまま効く
+        // IsDefault / IsCancel make Enter / Esc work out of the box
         var okButton = new global::Avalonia.Controls.Button
         {
             Content = okText, IsDefault = true, MinWidth = 80,
@@ -124,7 +125,7 @@ public static class Dialog
         root.Children.Add(buttons);
         dialog.Content = root;
 
-        // X で閉じられた場合は default(bool) = false が返る
+        // Closing with the X returns default(bool) = false
         return await dialog.ShowDialog<bool>(owner);
     }
 }

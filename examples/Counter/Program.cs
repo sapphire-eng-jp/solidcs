@@ -33,8 +33,9 @@ class Program
     {
         new Label(() => $"Count = {count.Value}"),
         new Label(() => "Hello World"),
-        // Button のフォントは以前ラッパー側で 24px 固定だったが、
-        // WithFont の導入でハードコードを撤去し利用側の指定に移した。
+        // The Button font used to be hardcoded to 24px in the wrapper; with the
+        // introduction of WithFont that hardcoding was removed and the choice
+        // moved to the call site.
         new Button(() => $"+1 ({count.Value})", () => count.Value += 1)
             .WithFont(new Font(Size: 24)),
     };

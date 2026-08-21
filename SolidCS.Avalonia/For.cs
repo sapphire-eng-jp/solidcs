@@ -1,18 +1,20 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// リストの各要素を Component に写像する動的リスト。items 内で読まれたリスト
-/// Signal の変化で子が増減する。C# はコンストラクタでジェネリック型推論が
-/// 効かないため、`For.Each(...)` の static ファクトリを入口にする。
-/// 更新は「新しいリストを代入」のイミュータブル規約
-/// (`todos.Value = [.. todos.Value, item]`) — in-place の Add は setter の
-/// 参照比較を素通りして通知されない。
-/// v2 (keyed diff): key (省略時はアイテム自身) が一致する子は Component を
-/// 再利用し、追加/削除/並べ替えだけを差分適用する — アイテム内の UI 状態
-/// (入力途中・フォーカス等) がリスト増減で消えない。再利用された子は
-/// 再 render されないので、アイテム内の変化はアイテム内の Signal で表現する
-/// こと (key を Id 等にして中身だけ変えると表示が古いまま残る)。
-/// key の重複は InvalidOperationException で fail-fast。
+/// Dynamic list that maps each item to a Component. Children are added and
+/// removed when the list Signal read inside items changes. C# cannot infer
+/// generic type arguments on constructors, so the `For.Each(...)` static
+/// factory is the entry point.
+/// Updates follow the immutable convention of assigning a new list
+/// (`todos.Value = [.. todos.Value, item]`) — an in-place Add slips past the
+/// setter's reference comparison and no notification fires.
+/// v2 (keyed diff): children whose key matches (the item itself when key is
+/// omitted) reuse their Component; only additions/removals/reorders are
+/// applied as a diff — UI state inside an item (in-progress input, focus,
+/// etc.) survives list changes. A reused child is NOT re-rendered, so changes
+/// within an item must be expressed as Signals inside the item (if you key by
+/// Id and mutate the contents, the display stays stale).
+/// Duplicate keys fail fast with InvalidOperationException.
 /// </summary>
 public static class For
 {
@@ -31,7 +33,8 @@ public sealed class ForComponent<T> : Component
     private readonly Func<T, object> _keyFn;
     private readonly IDisposable _effect;
     private List<(object Key, Component Comp)> _entries = new();
-    // 構築中の再入検出用 (render や子コンストラクタがリスト Signal を書くケース)
+    // Re-entrancy detection during rebuild (for the case where render or a
+    // child constructor writes the list Signal)
     private bool _rebuilding;
 
     internal ForComponent(
@@ -48,41 +51,47 @@ public sealed class ForComponent<T> : Component
         };
         _effect = Context.Instance.RegisterEffect(() =>
         {
-            var list = items(); // ここで読まれたリスト Signal だけを追跡する
-            // 子の構築を Untrack で切り離す。さもないとアイテム内部の Signal まで
-            // For の effect に購読され、アイテム 1 個の変化でリスト全体が再構築される。
+            var list = items(); // track only the list Signal read here
+            // Detach child construction with Untrack. Otherwise Signals inside
+            // the items would also be subscribed to For's effect, and a change
+            // in a single item would rebuild the entire list.
             Context.Instance.Untrack(() => Rebuild(list));
         });
     }
 
     private void Rebuild(IReadOnlyList<T> list)
     {
-        // render がリスト Signal を書くと構築ループの最中にこの effect が再入して
-        // 新旧が混在する。黙って壊れる前に fail-fast する。
+        // If render writes the list Signal, this effect re-enters in the middle
+        // of the rebuild loop and old and new state get mixed together.
+        // Fail fast instead of breaking silently.
         if (_rebuilding)
         {
             throw new InvalidOperationException(
-                "For の子構築中にリスト Signal が書かれた (再入)。render 内でリスト Signal を書かないこと。");
+                "The list Signal was written while For was building its children (re-entrancy). Do not write the list Signal inside render.");
         }
 
         _rebuilding = true;
         try
         {
-            // key 一致の子は再利用、新規だけ render、消えた子だけ Dispose。
-            // render が途中で throw した場合は作りかけの新規子だけ解放され、
-            // 既存の子と表示は無傷のまま残る (Reconcile 内で保証)。
+            // Children with matching keys are reused; only new items are
+            // rendered and only removed children are Disposed. If render
+            // throws partway through, only the half-built new children are
+            // released — existing children and the display remain untouched
+            // (guaranteed inside Reconcile).
             _entries = KeyedDiff.Reconcile(_entries, list, _keyFn, _render, c => c.Dispose());
 
             var desired = _entries.Select(e => e.Comp.GetControl()).ToList();
             var children = _panel.Children;
             if (children.Count == 0)
             {
-                // 初回は一括投入 (1 個ずつ Add すると子の数だけレイアウト無効化が走る)
+                // First round: add in bulk (Adding one at a time triggers a
+                // layout invalidation per child)
                 children.AddRange(desired);
                 return;
             }
-            // 消えた子を外してから並び順を合わせる。既存子の並べ替えは Move —
-            // detach/attach されないのでフォーカス等の状態が残る。
+            // Remove departed children first, then fix up the order. Existing
+            // children are reordered with Move — they are never
+            // detached/attached, so state such as focus survives.
             var keep = new HashSet<global::Avalonia.Controls.Control>(desired);
             for (var i = children.Count - 1; i >= 0; i--)
             {

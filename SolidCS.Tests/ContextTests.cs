@@ -60,8 +60,8 @@ public class ContextTests
         var s = new Signal<int>(0);
         var runs = 0;
 
-        // 初回 Run が throw すると呼び元はハンドルを受け取れないので、
-        // RegisterEffect 自身が途中まで張られた購読を解除してから再 throw する。
+        // When the initial Run throws, the caller never receives the handle, so
+        // RegisterEffect itself releases the partially set-up subscriptions before rethrowing.
         Assert.Throws<InvalidOperationException>(() => Context.Instance.RegisterEffect(() =>
         {
             _ = s.Value;

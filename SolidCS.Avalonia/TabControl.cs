@@ -3,10 +3,11 @@ using System.Collections;
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// タブ切り替え。collection initializer の `{ header, content }` でタブを足す。
-/// header は静的 string と リアクティブ Func&lt;string&gt; の両対応。
-/// content は全タブぶん構築時に作られてタブ切替でも生き続ける (keepAlive 相当 —
-/// 入力状態が保持される)。切替のたびに作り直したい場合は content を Show で包む。
+/// Tab switching. Add tabs via `{ header, content }` in a collection initializer.
+/// header accepts both a static string and a reactive Func&lt;string&gt;.
+/// content for every tab is built at construction time and stays alive across tab
+/// switches (keepAlive-equivalent — input state is preserved). To rebuild on each
+/// switch, wrap the content in Show.
 /// </summary>
 public sealed class TabControl : Component, IEnumerable<Component>
 {

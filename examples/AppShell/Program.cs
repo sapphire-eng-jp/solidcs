@@ -12,8 +12,8 @@ class Program
     public static void Main(string[] args) => App.Run(args,
         () => new Window(Shell(), title: "AppShell", width: 640, height: 400));
 
-    // DockPanel でアプリの外枠を組むデモ。上にヘッダー、下にステータスバー、
-    // 左にサイドバーをドックし、最後の子 (メインコンテンツ) が残り全面を埋める。
+    // Demo of building an app shell with DockPanel: header docked Top, status bar
+    // Bottom, sidebar Left, and the last child (the main content) fills the rest.
     static Component Shell()
     {
         var page = new Signal<string>("Home");
@@ -58,8 +58,8 @@ class Program
         Tags(),
     };
 
-    // WrapPanel のデモ。タグボタンがウィンドウ幅に応じて折り返す
-    // (リサイズすると折り返し位置が変わる)。
+    // WrapPanel demo. The tag buttons wrap based on the window width
+    // (resize the window and the wrap point moves).
     static Component Tags()
     {
         var selected = new Signal<string>("(none)");

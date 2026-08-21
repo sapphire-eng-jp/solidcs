@@ -17,7 +17,7 @@ public sealed class ProgressBar : Component
             Maximum = max,
             HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
-        // 表示専用なので双方向バインドではなく Func<double> のリアクティブ表示。
+        // Display-only, so this is a reactive Func<double> display rather than a two-way binding.
         _effect = Context.Instance.RegisterEffect(
             () => _bar.Value = valueFunc()
         );

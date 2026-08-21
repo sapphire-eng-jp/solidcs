@@ -32,7 +32,7 @@ public class UntrackTests
         Context.Instance.RegisterEffect(() =>
         {
             Context.Instance.Untrack(() => { _ = untracked.Value; });
-            // Untrack を抜けた後の読み出しは通常どおり追跡される。
+            // Reads after leaving Untrack are tracked as usual.
             _ = tracked.Value;
             runs++;
         });
@@ -63,7 +63,7 @@ public class UntrackTests
             Context.Instance.Untrack(() =>
             {
                 Context.Instance.Untrack(() => { });
-                // ネストした Untrack から戻っても、まだ Untrack 中のまま。
+                // After returning from the nested Untrack, we are still inside Untrack.
                 _ = s.Value;
             });
             runs++;
@@ -86,8 +86,8 @@ public class UntrackTests
             outerRuns++;
             Context.Instance.Untrack(() =>
             {
-                // Untrack 中でも新しく登録した effect 自身は普通に依存追跡できる
-                // (For / Show の子構築がまさにこのパターン)。
+                // Even inside Untrack, a newly registered effect tracks its own
+                // dependencies normally (child construction in For / Show is exactly this pattern).
                 Context.Instance.RegisterEffect(() =>
                 {
                     _ = s.Value;
@@ -99,15 +99,16 @@ public class UntrackTests
         Assert.Equal(1, outerRuns);
         Assert.Equal(1, innerRuns);
 
-        // s は inner にだけ購読されているので、変更で inner だけが再実行される。
+        // s is subscribed only by the inner effect, so changing it re-runs only the inner one.
         s.Value = 1;
         Assert.Equal(1, outerRuns);
         Assert.Equal(2, innerRuns);
     }
 
-    // For 相当をコアだけでシミュレートするテスト。リスト Signal の effect 内で
-    // 子 effect 群を Dispose → Untrack 下で再構築するパターンが、過追跡なしで動き、
-    // 通知パス内の Dispose (再入) でも壊れないことを固定する。
+    // Simulates the equivalent of For using only the core. Pins down that the pattern of
+    // disposing child effects and rebuilding them under Untrack, inside the list Signal's
+    // effect, works without over-tracking and survives Dispose within the notification
+    // path (reentrancy).
     [Fact]
     public void ForLikeRebuildScenario()
     {
@@ -139,13 +140,13 @@ public class UntrackTests
         Assert.Equal(1, rebuilds);
         Assert.Equal(1, childRuns);
 
-        // アイテム内 Signal の変化では子 effect だけが再実行され、リスト全体は再構築されない
-        // (Untrack がなければ rebuilds も増えてしまう = 過追跡)。
+        // Changing a Signal inside an item re-runs only the child effect; the whole list is
+        // not rebuilt (without Untrack, rebuilds would also increase = over-tracking).
         items.Value[0].Value = 1;
         Assert.Equal(1, rebuilds);
         Assert.Equal(2, childRuns);
 
-        // リスト差し替えで再構築。旧アイテムの Signal を変えても Dispose 済みの旧子は反応しない。
+        // Replacing the list triggers a rebuild. Changing an old item's Signal does not wake the disposed old children.
         var old = items.Value[0];
         items.Value = [new Signal<int>(10), new Signal<int>(20)];
         Assert.Equal(2, rebuilds);
@@ -154,9 +155,10 @@ public class UntrackTests
         Assert.Equal(4, childRuns);
     }
 
-    // 論点 7: 子 effect が親と同じ Signal を購読しているとき、通知スナップショットに
-    // 旧世代の子が残ったまま親の再構築で Dispose されるケース。_disposed ガードにより
-    // 旧世代は Dispose 以降一切実行されないことを世代別カウンタで固定する。
+    // Issue 7: the case where a child effect subscribes to the same Signal as its parent,
+    // and the parent's rebuild disposes the old-generation child while it still sits in the
+    // notification snapshot. Uses per-generation counters to pin down that, thanks to the
+    // _disposed guard, an old generation never runs again after Dispose.
     [Fact]
     public void ChildSubscribedToSameSignalDisposedDuringRebuildStaysDead()
     {
@@ -184,10 +186,10 @@ public class UntrackTests
 
         Assert.Equal(1, runsByGen[0]);
 
-        s.Value = 1; // 世代 0 が Dispose され、世代 1 が生まれる (例外なく完走すること)
+        s.Value = 1; // generation 0 is disposed and generation 1 is born (must complete without throwing)
         var gen0After = runsByGen[0];
-        s.Value = 2; // 世代 0 は snapshot に入り得ないし、入っていても _disposed でノーオペ
+        s.Value = 2; // generation 0 cannot be in the snapshot, and even if it were, _disposed makes it a no-op
         Assert.Equal(gen0After, runsByGen[0]);
-        Assert.True(runsByGen[2] >= 1); // 最新世代は生きている
+        Assert.True(runsByGen[2] >= 1); // the latest generation is alive
     }
 }

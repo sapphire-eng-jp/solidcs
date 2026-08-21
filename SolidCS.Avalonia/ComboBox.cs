@@ -1,10 +1,10 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// ドロップダウン選択。「選択肢のリスト + 選択中の Signal&lt;T&gt;」のグループ単位 API
-/// (RadioGroup と同型)。items はリアクティブ (`Func` 内で読まれたリスト Signal の
-/// 変化で選択肢が入れ替わる)。入口は `ComboBox.Of(...)` static ファクトリ
-/// (コンストラクタはジェネリック推論が効かない)。
+/// Drop-down selection. A group-level API of "list of options + Signal&lt;T&gt; of the
+/// current selection" (same shape as RadioGroup). items is reactive (the options are
+/// swapped out when a list Signal read inside the `Func` changes). The entry point is
+/// the `ComboBox.Of(...)` static factory (constructors don't get generic inference).
 /// </summary>
 public static class ComboBox
 {

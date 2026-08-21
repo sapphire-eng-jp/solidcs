@@ -16,8 +16,9 @@ public sealed class Window
             Title = title,
             Content = BuildRoot(content, menu),
         };
-        // NaN (未指定) をそのまま代入すると Avalonia のデフォルト (コンテンツ依存の
-        // 自動サイズ) と同じだが、意図を明示するため指定時のみ設定する。
+        // Assigning NaN (unspecified) directly would match Avalonia's default
+        // (content-dependent auto sizing), but we set only when specified
+        // to make the intent explicit.
         if (!double.IsNaN(width)) _window.Width = width;
         if (!double.IsNaN(height)) _window.Height = height;
 
@@ -32,8 +33,8 @@ public sealed class Window
     {
         if (menu is null) return content.GetControl();
 
-        // メニューバーを上端にドックし、残り全面を content が埋める
-        // (DockPanel は LastChildFill がデフォルト true)。
+        // Dock the menu bar at the top; content fills the rest
+        // (DockPanel defaults LastChildFill to true).
         var dock = new global::Avalonia.Controls.DockPanel();
         var menuControl = menu.GetControl();
         global::Avalonia.Controls.DockPanel.SetDock(

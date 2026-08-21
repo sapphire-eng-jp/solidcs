@@ -16,19 +16,20 @@ public sealed class TextBox : Component
         };
         if (multiline)
         {
-            // 複数行モード: Enter で改行を受け付け、行は折り返す。縦に伸ばされた
-            // とき (DockPanel の fill 等) にテキストが縦中央に浮かないよう上寄せ。
+            // Multi-line mode: accept Enter as a newline and wrap lines. Align content
+            // to the top so text doesn't float at the vertical center when the control
+            // is stretched vertically (e.g. filling a DockPanel).
             _textBox.AcceptsReturn = true;
             _textBox.TextWrapping = global::Avalonia.Media.TextWrapping.Wrap;
             _textBox.VerticalContentAlignment = global::Avalonia.Layout.VerticalAlignment.Top;
         }
-        // Signal → UI: 他所で value.Value が更新されたら TextBox に反映
+        // Signal → UI: reflect updates to value.Value made elsewhere into the TextBox
         _effect = Context.Instance.RegisterEffect(
             () => _textBox.Text = value.Value
         );
-        // UI → Signal: ユーザー入力を Signal に書き戻す。
-        // Signal.setter の equality check により、effect 経由の代入で起きる
-        // TextChanged のエコーは同値で止まり、無限ループにならない。
+        // UI → Signal: write user input back into the Signal.
+        // Thanks to the Signal setter's equality check, the TextChanged echo caused
+        // by assignments via the effect stops on the equal value — no infinite loop.
         _textBox.TextChanged += (_, _) => value.Value = _textBox.Text ?? "";
     }
 

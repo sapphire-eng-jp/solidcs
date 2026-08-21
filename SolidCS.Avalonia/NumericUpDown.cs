@@ -17,7 +17,7 @@ public sealed class NumericUpDown : Component
             Increment = increment,
             HorizontalAlignment = horizontalAlignment.ToAvalonia(),
         };
-        // null は「制限なし」= Avalonia のデフォルト (decimal.MinValue / MaxValue) のまま。
+        // null means "no limit" = keep Avalonia's defaults (decimal.MinValue / MaxValue).
         if (min is not null) _numeric.Minimum = min.Value;
         if (max is not null) _numeric.Maximum = max.Value;
 
@@ -25,7 +25,7 @@ public sealed class NumericUpDown : Component
         _effect = Context.Instance.RegisterEffect(
             () => _numeric.Value = value.Value
         );
-        // UI → Signal。Value は decimal? (テキスト欄を空にできる) なので 0 に丸める。
+        // UI → Signal. Value is decimal? (the text field can be emptied), so coerce to 0.
         _numeric.ValueChanged += (_, _) => value.Value = _numeric.Value ?? 0;
     }
 

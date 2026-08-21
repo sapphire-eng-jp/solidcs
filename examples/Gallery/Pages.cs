@@ -4,13 +4,13 @@ using SolidCS.Avalonia;
 
 namespace Gallery;
 
-// ページの一覧と共通レイアウト。各ページの実体はカテゴリ別の partial ファイル
-// (Pages.Basic.cs / Pages.Input.cs / ...) にある。
+// The page catalog and shared layout. The pages themselves live in per-category
+// partial files (Pages.Basic.cs / Pages.Input.cs / ...).
 static partial class Pages
 {
-    // sidebar とページ切替 (Program.Content) の両方がこの一覧から組まれる。
-    // Name はページ切替の key なので全カテゴリを通して一意であること
-    // (重複は Content の ToDictionary で fail-fast)。
+    // Both the sidebar and the page switcher (Program.Content) are built from
+    // this list. Name is the page-switching key, so it must be unique across all
+    // categories (duplicates fail fast in Content's ToDictionary).
     public static readonly
         (string Category, (string Name, Func<Component> Create)[] Items)[] Catalog =
     [
@@ -32,13 +32,13 @@ static partial class Pages
             [("Dialog", DialogPage), ("Menu", MenuPage)]),
     ];
 
-    // 見出しの共通スタイル (ページタイトルと sidebar のカテゴリ見出しで共用)。
+    // Shared heading style (used by both page titles and sidebar category headings).
     internal static Component Heading(string text, double size) =>
         new TextBlock(() => text, HorizontalAlignment.Left)
             .WithFont(new Font(Size: size, Weight: FontWeight.Bold));
 
-    // ページ共通レイアウト: タイトル + 説明 + デモ本体。
-    // description はペイン幅で自動折り返し (textWrapping: Wrap)。
+    // Shared page layout: title + description + the demo itself.
+    // The description wraps to the pane width (textWrapping: Wrap).
     static Component Page(string title, string description, params Component[] demo)
     {
         var panel = new StackPanel

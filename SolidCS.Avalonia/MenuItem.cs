@@ -16,8 +16,8 @@ public sealed class MenuItem : MenuElement, IEnumerable<MenuElement>
         );
         if (onClick is not null)
         {
-            // Click は bubble する routed event なので、子 MenuItem のクリックが
-            // 親のハンドラにも届く。自分自身のクリックだけ拾う。
+            // Click is a bubbling routed event, so clicks on child MenuItems also
+            // reach the parent's handler. Only pick up clicks on this item itself.
             _item.Click += (_, e) =>
             {
                 if (e.Source == _item) onClick();

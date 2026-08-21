@@ -2,8 +2,9 @@ namespace SolidCS;
 
 public sealed class Signal<T>(T initValue)
 {
-    // Signal の読み書きは単一の論理フロー (UI スレッドや一つの async chain) 内で完結させる前提。
-    // 別スレッドから書く場合は呼び元で Dispatcher 経由などにマーシャリングすること。
+    // Signal reads and writes are assumed to stay within a single logical flow (the UI thread
+    // or one async chain). To write from another thread, the caller must marshal the write,
+    // e.g. via a Dispatcher.
     private readonly HashSet<Effect> _subscribers = new();
 
     private T _value = initValue;
@@ -31,7 +32,7 @@ public sealed class Signal<T>(T initValue)
 
             if (_subscribers.Count == 0) return;
 
-            // 通知中にeffectが新しい購読を足してもコレクション変更例外にならないようスナップショットで反復する。
+            // Iterate over a snapshot so that effects adding new subscriptions during notification don't cause a collection-modified exception.
             foreach (var effect in _subscribers.ToArray())
             {
                 effect.Run();

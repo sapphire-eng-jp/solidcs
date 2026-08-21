@@ -1,9 +1,9 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// Component.WithFont に渡すフォント設定。null のメンバーは「指定なし」で、
-/// テーマのデフォルト / 外側の WithFont の値がそのまま使われる。
-/// Family は Avalonia の FontFamily 記法の文字列 ("Consolas" / "Inter, Arial" 等)。
+/// Font settings passed to Component.WithFont. A null member means "unspecified":
+/// the theme default / the value from an outer WithFont is used as-is.
+/// Family is a string in Avalonia's FontFamily notation ("Consolas", "Inter, Arial", etc.).
 /// </summary>
 public sealed record Font(
     string? Family = null,

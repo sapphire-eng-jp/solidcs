@@ -21,7 +21,7 @@ public sealed class Slider : Component
         _effect = Context.Instance.RegisterEffect(
             () => _slider.Value = value.Value
         );
-        // UI → Signal。エコーは Signal setter の equality check で止まる。
+        // UI → Signal. Echoes are stopped by the Signal setter's equality check.
         _slider.ValueChanged += (_, _) => value.Value = _slider.Value;
     }
 

@@ -2,11 +2,11 @@ namespace SolidCS.Avalonia;
 
 public enum TextWrapping
 {
-    /// <summary>折り返さない。はみ出した分は切り詰められる (Avalonia デフォルト)。</summary>
+    /// <summary>No wrapping. Overflowing text is clipped (Avalonia default).</summary>
     NoWrap,
-    /// <summary>単語境界で折り返す。</summary>
+    /// <summary>Wrap at word boundaries.</summary>
     Wrap,
-    /// <summary>単語境界で折り返すが、1 語が幅を超える場合ははみ出しを許す。</summary>
+    /// <summary>Wrap at word boundaries, but let a single word overflow if it exceeds the width.</summary>
     WrapWithOverflow,
 }
 

@@ -8,8 +8,9 @@ namespace CounterBrowser;
 
 class Program
 {
-    // ブラウザ版は App.Run ではなく App.RunBrowser。Window が無いので
-    // root の Component を直接渡す (index.html の <div id="out"> にマウントされる)。
+    // The browser build uses App.RunBrowser instead of App.Run. There is no Window,
+    // so we pass the root Component directly (it gets mounted into the
+    // <div id="out"> in index.html).
     public static Task Main(string[] args) => App.RunBrowser(args, Counter);
 
     static Component Counter()

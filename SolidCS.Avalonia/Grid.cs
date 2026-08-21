@@ -3,15 +3,16 @@ using System.Collections;
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// 行・列を文字列ミニ言語 (XAML の GridLength 記法: "Auto" / "*" / "2*" / "100") で
-/// 定義するグリッドコンテナ。2 つのモードがある:
+/// Grid container whose rows and columns are defined with a string mini-language
+/// (XAML's GridLength notation: "Auto" / "*" / "2*" / "100"). It has two modes:
 /// <list type="bullet">
-/// <item>rows 省略 (auto-flow): 素の Add(child) で子を左→右に流し込み、
-/// 必要なだけ Auto 行を自動生成する。</item>
-/// <item>rows 指定 (explicit): { child, row, col } / { child, row, col, rowSpan, colSpan }
-/// で明示配置する。範囲外は Add 時点で fail-fast。</item>
+/// <item>rows omitted (auto-flow): plain Add(child) flows children left to right,
+/// auto-generating as many Auto rows as needed.</item>
+/// <item>rows specified (explicit): place children explicitly with
+/// { child, row, col } / { child, row, col, rowSpan, colSpan }.
+/// Out-of-range placement fails fast at Add time.</item>
 /// </list>
-/// モードの混在は InvalidOperationException。
+/// Mixing the modes throws InvalidOperationException.
 /// </summary>
 public sealed class Grid : Component, IEnumerable<Component>
 {
@@ -43,7 +44,7 @@ public sealed class Grid : Component, IEnumerable<Component>
         if (!_autoFlow)
         {
             throw new InvalidOperationException(
-                "rows を指定した Grid では { child, row, col } 形式で明示配置すること。");
+                "A Grid with rows specified requires explicit placement via { child, row, col }.");
         }
 
         var row = _autoIndex / _columnCount;
@@ -71,17 +72,17 @@ public sealed class Grid : Component, IEnumerable<Component>
         if (_autoFlow)
         {
             throw new InvalidOperationException(
-                "rows を省略した Grid (auto-flow) では Add(child) で追加すること。");
+                "A Grid without rows (auto-flow) requires adding children via Add(child).");
         }
         if (row < 0 || rowSpan < 1 || row + rowSpan > _rowCount)
         {
             throw new ArgumentOutOfRangeException(nameof(row),
-                $"row {row} + rowSpan {rowSpan} は行数 {_rowCount} の範囲外。");
+                $"row {row} + rowSpan {rowSpan} is out of range for {_rowCount} rows.");
         }
         if (col < 0 || colSpan < 1 || col + colSpan > _columnCount)
         {
             throw new ArgumentOutOfRangeException(nameof(col),
-                $"col {col} + colSpan {colSpan} は列数 {_columnCount} の範囲外。");
+                $"col {col} + colSpan {colSpan} is out of range for {_columnCount} columns.");
         }
 
         Place(child, row, col, rowSpan, colSpan);

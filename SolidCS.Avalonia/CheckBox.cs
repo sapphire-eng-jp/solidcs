@@ -21,7 +21,7 @@ public sealed class CheckBox : Component
         _valueEffect = Context.Instance.RegisterEffect(
             () => _checkBox.IsChecked = value.Value
         );
-        // IsChecked は bool? (Indeterminate 状態あり)。Signal<bool> に丸める。
+        // IsChecked is bool? (it has an Indeterminate state); coerce it to Signal<bool>.
         _checkBox.IsCheckedChanged += (_, _) => value.Value = _checkBox.IsChecked ?? false;
     }
 

@@ -21,21 +21,23 @@ class Program
         var qty = new Signal<decimal>(1);
         var mood = new Signal<string>("calm");
 
-        // ウィンドウ (320px) より縦に長いコンテンツを ScrollViewer で包む。
-        // 各行が name に反応するので、スクロール先でもリアクティブ更新が生きて
-        // いることを確認できる。
-        // root の WithFont(Func 版) が fontSize Signal を読むので、A-/A+ ボタンで
-        // フォーム全体のフォントサイズが実行時に変わる (実行時フォント変更のデモ)。
+        // Content taller than the window (320px) wrapped in a ScrollViewer.
+        // Every line reacts to name, so you can confirm reactive updates keep
+        // working even in the scrolled-away parts.
+        // The root's WithFont (Func overload) reads the fontSize Signal, so the
+        // A-/A+ buttons change the whole form's font size at runtime
+        // (runtime font change demo).
         return new ScrollViewer(new StackPanel
         {
-            // 挨拶行は WithFont の静的指定で上書き — 内側 (近い方) が勝つので
-            // root のサイズ変更に追従せず 20px Bold のまま。
+            // The greeting line is overridden with a static WithFont — the inner
+            // (closer) one wins, so it stays 20px Bold and does not follow the
+            // root's size changes.
             new TextBlock(() => friendly.Value
                 ? (name.Value.Length == 0 ? "Hello, stranger!" : $"Hello, {name.Value}!")
                 : (name.Value.Length == 0 ? "Hi." : $"Hi {name.Value}."))
                 .WithFont(new Font(Size: 20, Weight: FontWeight.Bold)),
 
-            // 実行時フォント変更の操作列。Button を Stretch でセル幅いっぱいにする。
+            // Controls for the runtime font change. Stretch makes each Button fill its cell.
             new Grid(columns: "*,Auto,*")
             {
                 new Button(() => "A-", () => fontSize.Value = Math.Max(8, fontSize.Value - 2),
@@ -45,17 +47,18 @@ class Program
                     HorizontalAlignment.Stretch),
             },
 
-            // Grid の auto-flow モード: rows 省略で子を左→右に流し込み、
-            // ラベル列は中身ぶん (Auto)、入力欄が残り全部 (*)。
+            // Grid auto-flow mode: rows omitted, children flow left to right;
+            // the label column sizes to content (Auto), the input takes the rest (*).
             new Grid(columns: "Auto,*")
             {
                 new Label(() => "Name"), new TextBox(name),
                 new Label(() => "Style"), new CheckBox(friendly, () => "Use friendly greeting"),
             },
 
-            // Phase 1 コントロール群のデモ: Slider と ProgressBar は同じ Signal を
-            // 共有し (Slider を動かすとバーが追従)、NumericUpDown / RadioGroup の
-            // 値は下のサマリ行にリアクティブ反映される。
+            // Demo of the Phase 1 controls: Slider and ProgressBar share the same
+            // Signal (move the Slider and the bar follows), and the
+            // NumericUpDown / RadioGroup values are reactively reflected in the
+            // summary line below.
             new Grid(columns: "Auto,*")
             {
                 new Label(() => "Volume"), new Slider(volume),
@@ -67,7 +70,7 @@ class Program
             new TextBlock(() =>
                 $"volume {volume.Value:0}% / qty {qty.Value} / {mood.Value} mood"),
 
-            // Grid の explicit モード: 統計 2 セル + colSpan 2 のサマリ行。
+            // Grid explicit mode: two stat cells + a summary row with colSpan 2.
             new Grid(rows: "Auto,Auto", columns: "*,*")
             {
                 { new Label(() => $"chars: {name.Value.Length}"), 0, 0 },

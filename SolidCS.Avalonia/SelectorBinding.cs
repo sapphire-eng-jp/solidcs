@@ -1,11 +1,12 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// ComboBox / ListBox 共通の「items + 選択中 Signal」バインド。
-/// ItemsSource には labelFunc で変換した文字列リストを渡し、T との対応は
-/// SelectedIndex で取る (Avalonia のテンプレート機構を公開 API に露出させない)。
-/// 「未選択」は selected の値が items に見つからない状態 (SelectedIndex = -1) で
-/// 表現し、Signal に null や default を書くことはない。
+/// "items + selected Signal" binding shared by ComboBox and ListBox.
+/// ItemsSource receives a string list produced by labelFunc, and the mapping
+/// back to T goes through SelectedIndex (keeping Avalonia's templating
+/// machinery out of the public API).
+/// "No selection" is represented by the selected value not being found in
+/// items (SelectedIndex = -1); null or default is never written to the Signal.
 /// </summary>
 internal sealed class SelectorBinding<T> : IDisposable
 {
@@ -22,9 +23,10 @@ internal sealed class SelectorBinding<T> : IDisposable
     {
         _control = control;
 
-        // items effect: itemsFunc 内で読まれたリスト Signal の変化で作り直す。
-        // ラベルもこのタイミングで再計算される — labelFunc 内の Signal は追跡されない
-        // (RadioGroup のラベルと違いリアクティブではない) 点に注意。
+        // items effect: rebuild when the list Signal read inside itemsFunc
+        // changes. Labels are also recomputed at this point — note that
+        // Signals inside labelFunc are NOT tracked (unlike RadioGroup's
+        // labels, they are not reactive).
         _itemsEffect = Context.Instance.RegisterEffect(() =>
         {
             var list = itemsFunc();
@@ -32,9 +34,9 @@ internal sealed class SelectorBinding<T> : IDisposable
             {
                 _items = new List<T>(list);
                 _control.ItemsSource = _items.Select(labelFunc).ToList();
-                // ItemsSource 差し替えで選択が飛ぶので selected から再適用する。
-                // selected の読取を Untrack 内で行い、items effect が selected を
-                // 購読する過追跡を防ぐ。
+                // Replacing ItemsSource drops the selection, so re-apply it
+                // from selected. Read selected inside Untrack to keep the
+                // items effect from over-tracking a subscription to it.
                 ApplySelection(selected.Value);
             });
         });
@@ -42,8 +44,9 @@ internal sealed class SelectorBinding<T> : IDisposable
         _selectionEffect = Context.Instance.RegisterEffect(
             () => ApplySelection(selected.Value)
         );
-        // UI → Signal: 実選択 (index >= 0) だけ書き戻す。ItemsSource 差し替え時の
-        // -1 は無視。エコーは Signal setter の equality check で止まる。
+        // UI → Signal: write back only real selections (index >= 0). The -1
+        // that occurs when ItemsSource is replaced is ignored. Echoes are
+        // stopped by the Signal setter's equality check.
         _control.SelectionChanged += (_, _) =>
         {
             var idx = _control.SelectedIndex;
@@ -53,7 +56,7 @@ internal sealed class SelectorBinding<T> : IDisposable
 
     private void ApplySelection(T value)
     {
-        // 見つからなければ -1 = 未選択表示
+        // Not found means -1 = shown as no selection
         _control.SelectedIndex = _items.FindIndex(
             x => EqualityComparer<T>.Default.Equals(x, value));
     }

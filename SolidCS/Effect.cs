@@ -9,7 +9,7 @@ public sealed class Effect(Action run) : IDisposable
     {
         if (_disposed) return;
 
-        // 前回までの購読を解除して再追跡する。条件付き読み出しで依存が変わるケースに対応するため。
+        // Release all previous subscriptions and re-track, to handle cases where conditional reads change the dependencies.
         Untrack();
 
         Context.Instance.Subscribers.Push(this);
@@ -36,7 +36,7 @@ public sealed class Effect(Action run) : IDisposable
     {
         foreach (var c in _cleanups)
         {
-            // 1つの解除が失敗しても残りの解除を続行する。
+            // If one cleanup fails, keep running the rest.
             try { c(); } catch { }
         }
         _cleanups.Clear();

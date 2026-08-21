@@ -7,13 +7,13 @@ namespace Gallery;
 
 static partial class Pages
 {
-    // メニュークリックの記録。メニューバー (MainMenu) と Menu ページの橋渡しで、
-    // どちらもこのファイル内で完結する。
+    // Record of menu clicks. Bridges the menu bar (MainMenu) and the Menu page —
+    // both live entirely within this file.
     static readonly Signal<string> MenuLog = new("(nothing clicked yet)");
 
-    // Window の menu 引数に渡すメニューバー (Program から呼ばれる)。クリック結果は
-    // MenuLog 経由で Menu ページに表示され、2 つ目のトップレベル項目はリアクティブ
-    // header のデモを兼ねる。
+    // The menu bar passed to the Window's menu argument (called from Program).
+    // Click results are shown on the Menu page via MenuLog, and the second
+    // top-level item doubles as a reactive header demo.
     public static Menu MainMenu(Signal<string> page) => new()
     {
         new MenuItem(() => "File")

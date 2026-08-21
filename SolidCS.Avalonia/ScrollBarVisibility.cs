@@ -2,13 +2,13 @@ namespace SolidCS.Avalonia;
 
 public enum ScrollBarVisibility
 {
-    /// <summary>スクロールしない。コンテンツはビューポートの寸法に切り詰められる。</summary>
+    /// <summary>No scrolling. Content is clipped to the viewport dimensions.</summary>
     Disabled,
-    /// <summary>コンテンツがはみ出すときだけスクロールバーを表示する。</summary>
+    /// <summary>Show the scroll bar only when the content overflows.</summary>
     Auto,
-    /// <summary>スクロールは可能だがスクロールバーは表示しない。</summary>
+    /// <summary>Scrolling is possible, but no scroll bar is shown.</summary>
     Hidden,
-    /// <summary>常にスクロールバーを表示する。</summary>
+    /// <summary>Always show the scroll bar.</summary>
     Visible,
 }
 

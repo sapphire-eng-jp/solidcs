@@ -12,9 +12,9 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.18" />
   </ItemGroup>
 
-  <!-- bootstrap 用パッケージはプラットフォーム別: desktop は Avalonia.Desktop、
-       browser (WebAssembly) は Avalonia.Browser。コンポーネント群は Avalonia コアのみに
-       依存するので両 TFM で共通。 -->
+  <!-- Bootstrap packages are per-platform: Avalonia.Desktop for desktop,
+       Avalonia.Browser for browser (WebAssembly). The components depend only on
+       Avalonia core, so they are shared across both TFMs. -->
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'browser'">
     <PackageReference Include="Avalonia.Desktop" Version="11.3.18" />
   </ItemGroup>

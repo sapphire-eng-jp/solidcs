@@ -7,7 +7,7 @@ using SolidCS.Avalonia;
 
 namespace Todo;
 
-// TODO アイテム。Title は不変、Done だけがアイテム内のリアクティブ状態。
+// A TODO item. Title is immutable; Done is the item's only piece of reactive state.
 sealed class TodoItem(string title)
 {
     public string Title { get; } = title;
@@ -20,15 +20,17 @@ class Program
     public static void Main(string[] args) => App.Run(args,
         () => new Window(TodoApp(), title: "Todo", width: 400, height: 480));
 
-    // For + Show のデモ。リストは Signal<IReadOnlyList<T>> のイミュータブル更新規約
-    // (todos.Value = [.. todos.Value, item]) — in-place の Add では通知が飛ばない。
+    // For + Show demo. The list follows the immutable-update rule for
+    // Signal<IReadOnlyList<T>> (todos.Value = [.. todos.Value, item]) —
+    // an in-place Add would not trigger a notification.
     static Component TodoApp()
     {
         var todos = new Signal<IReadOnlyList<TodoItem>>([]);
         var input = new Signal<string>("");
         var showStats = new Signal<bool>(true);
-        // 行 render の通し番号。keyed diff (For v2) で既存行の Component が再利用
-        // されることの実証用 — 行を増減しても既存行の #n が変わらない。
+        // Running number for row renders. Demonstrates that the keyed diff (For v2)
+        // reuses existing row Components — adding or removing rows does not change
+        // the #n of the rows that stay.
         var renderCount = 0;
 
         void Add()
@@ -42,15 +44,16 @@ class Program
         return new StackPanel
         {
             new Label(() => "SolidCS Todo"),
-            // 入力行: Add ボタンを右にドックし、TextBox が残り幅を埋める
+            // Input row: the Add button is docked right; the TextBox fills the remaining width
             new DockPanel
             {
                 { new Button(() => "Add", Add), Dock.Right },
                 new TextBox(input),
             },
-            // リスト本体。todos の差し替えで行が増減する。key 省略時はアイテム自身
-            // (TodoItem は class なので参照) がキー — イミュータブル更新規約では
-            // 既存インスタンスが新リストにそのまま入るので、既存行は再利用される。
+            // The list itself. Replacing todos adds/removes rows. With key omitted,
+            // the item itself is the key (TodoItem is a class, so by reference) —
+            // under the immutable-update rule existing instances carry over into
+            // the new list, so existing rows are reused.
             For.Each(() => todos.Value, todo => TodoRow(todos, todo, ++renderCount)),
             new CheckBox(showStats, () => "show stats"),
             new Show(() => showStats.Value,

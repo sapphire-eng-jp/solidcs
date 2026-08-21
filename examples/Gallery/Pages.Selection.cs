@@ -33,8 +33,9 @@ static partial class Pages
 
     static Component TreeViewPage()
     {
-        // 各ノードが自分の children Signal を持ち、変化したノードのサブツリーだけが
-        // keyed diff で更新される — 展開状態が生き残ることの確認用。
+        // Each node holds its own children Signal, and only the changed node's
+        // subtree is updated via keyed diff — for verifying that expansion state
+        // survives.
         var docs = new FsNode("docs", new FsNode("readme.md"), new FsNode("spec.md"));
         var src = new FsNode("src", new FsNode("main.cs"));
         var roots = new Signal<IReadOnlyList<FsNode>>([docs, src]);
@@ -57,7 +58,7 @@ static partial class Pages
     }
 }
 
-// TreeView ページのノード。Name は不変、Children がノード内のリアクティブ状態。
+// Node for the TreeView page. Name is immutable; Children is the node's reactive state.
 sealed class FsNode(string name, params FsNode[] children)
 {
     public string Name { get; } = name;

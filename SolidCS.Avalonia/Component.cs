@@ -7,20 +7,21 @@ public abstract class Component : IDisposable
 
     public abstract global::Avalonia.Controls.Control GetControl();
 
-    /// <summary>静的なフォント設定。実行時に変えたい場合は Func 版を使う。</summary>
+    /// <summary>Static font settings. Use the Func overload to change fonts at runtime.</summary>
     public Component WithFont(Font font) => WithFont(() => font);
 
     /// <summary>
-    /// フォントをリアクティブに設定する。fontFunc 内で読まれた Signal が変わるたび
-    /// 再適用される。適用は Avalonia の Style で行うため、コンテナに当てると子孫全体へ
-    /// カスケードし、ネストした WithFont は control に近い方が勝つ。
+    /// Sets the font reactively. Reapplied whenever a Signal read inside fontFunc
+    /// changes. The font is applied via an Avalonia Style, so applying it to a
+    /// container cascades to all descendants, and with nested WithFont calls the
+    /// one closer to the control wins.
     /// </summary>
     public Component WithFont(Func<Font> fontFunc)
     {
         if (_fontEffect is not null)
         {
             throw new InvalidOperationException(
-                "WithFont は 1 つの Component に 1 回だけ呼べる。設定は 1 つの Font にまとめること。");
+                "WithFont can be called only once per Component. Combine all settings into a single Font.");
         }
         var control = GetControl();
         _fontEffect = Context.Instance.RegisterEffect(() => ApplyFont(control, fontFunc()));
@@ -29,15 +30,16 @@ public abstract class Component : IDisposable
 
     private void ApplyFont(global::Avalonia.Controls.Control control, Font font)
     {
-        // 実行時変更 (effect の再実行) では前回の Style を外してから当て直す。
+        // On a runtime change (effect re-run), remove the previous Styles before reapplying.
         foreach (var s in _fontStyles) control.Styles.Remove(s);
         _fontStyles.Clear();
 
-        // TextElement の継承 attached property ではなく Style で当てる理由:
-        // Fluent の ControlTheme は Button 等の FontSize を setter で持っており、
-        // 祖先からの継承値はそれに負ける。Style は ControlTheme より優先されるので
-        // コンテナに当ててもテーマ持ちのコントロールまで届く。
-        // FontSize 等は TemplatedControl 系と TextBlock が別々の型で持つため 2 本当てる。
+        // Why a Style rather than TextElement's inherited attached properties:
+        // Fluent's ControlTheme sets FontSize etc. via setters on Button and friends,
+        // and inherited values from an ancestor lose to those. A Style takes precedence
+        // over a ControlTheme, so applying it to a container reaches even the
+        // theme-styled controls. FontSize etc. live on separate types for
+        // TemplatedControl-derived controls vs. TextBlock, hence two Styles.
         var templated = new global::Avalonia.Styling.Style(x =>
             global::Avalonia.Styling.Selectors.Is<global::Avalonia.Controls.Primitives.TemplatedControl>(x));
         var textBlock = new global::Avalonia.Styling.Style(x =>
@@ -77,7 +79,7 @@ public abstract class Component : IDisposable
                 font.Style.Value.ToAvalonia());
         }
 
-        if (templated.Setters.Count == 0) return; // 全メンバー null なら何も当てない
+        if (templated.Setters.Count == 0) return; // all members null — apply nothing
 
         control.Styles.Add(templated);
         control.Styles.Add(textBlock);
@@ -92,8 +94,8 @@ public abstract class Component : IDisposable
     }
 
     /// <summary>
-    /// 派生クラスの解放処理 (effect の解放・子への伝播)。base 呼び出しは不要 —
-    /// WithFont の effect は Dispose() 側が解放する。
+    /// Cleanup for derived classes (disposing effects, propagating to children).
+    /// No base call needed — Dispose() takes care of the WithFont effect.
     /// </summary>
     protected virtual void OnDispose() { }
 }

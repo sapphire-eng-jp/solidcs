@@ -1,11 +1,12 @@
 namespace SolidCS.Avalonia;
 
 /// <summary>
-/// 条件付き表示。when が真なら child、偽なら fallback (省略時は空) を表示する。
-/// デフォルト (unmount) は条件反転のたびに旧側を Dispose して作り直す —
-/// effect が確実に解放され、再表示時は状態リセット (SolidJS の Show と同じ)。
-/// keepAlive: true にすると一度構築した Component を保持して Content の
-/// 差し替えだけで切り替える — 状態保持・再表示が高速。
+/// Conditional rendering. Shows child while when is true, otherwise fallback
+/// (empty if omitted). The default (unmount) Disposes the old side and builds
+/// the new one every time the condition flips — effects are reliably released
+/// and state is reset on re-display (same as SolidJS's Show).
+/// With keepAlive: true, a Component built once is kept and switching only
+/// swaps the Content — state is preserved and re-display is fast.
 /// </summary>
 public sealed class Show : Component
 {
@@ -15,17 +16,19 @@ public sealed class Show : Component
     private readonly bool _keepAlive;
     private readonly IDisposable _effect;
 
-    // unmount モード: 現在マウント中の Component (条件反転で Dispose される)
+    // unmount mode: the currently mounted Component (Disposed when the condition flips)
     private Component? _current;
-    // keepAlive モード: 一度構築したら保持し続ける
+    // keepAlive mode: once built, kept forever
     private Component? _childKept;
     private Component? _fallbackKept;
-    // 直前に描画した条件値 (null は未描画)。when が読む Signal が変わっても条件値が
-    // 同じなら子を作り直さないためのガード — 派生条件 (Count > 0 等) では条件が
-    // 反転しなくても effect は再実行されるため、これがないと unmount モードで
-    // 子が無意味に破棄・再構築される。
+    // The condition value last rendered (null = not rendered yet). Guard that
+    // avoids rebuilding the child when a Signal read by when changes but the
+    // condition value stays the same — for derived conditions (Count > 0 etc.)
+    // the effect re-runs even when the condition doesn't flip, and without
+    // this guard unmount mode would pointlessly destroy and rebuild the child.
     private bool? _lastCond;
-    // 構築中の再入検出用 (child/fallback ファクトリが when の読む Signal を書くケース)
+    // Re-entrancy detection during construction (for the case where the
+    // child/fallback factory writes a Signal that when reads)
     private bool _rendering;
 
     public Show(
@@ -40,31 +43,33 @@ public sealed class Show : Component
         _host = new global::Avalonia.Controls.ContentControl();
         _effect = Context.Instance.RegisterEffect(() =>
         {
-            var cond = when(); // ここで読まれた Signal だけを追跡する
-            // 子の構築 (コンストラクタ内の Signal 読取) が Show の effect に
-            // 購読される過追跡を防ぐため、Untrack の中で行う。
+            var cond = when(); // track only the Signals read here
+            // Build the child inside Untrack, so that Signal reads in the
+            // child's constructor don't get over-tracked into Show's effect.
             Context.Instance.Untrack(() => Render(cond));
         });
     }
 
     private void Render(bool cond)
     {
-        // ファクトリが when の読む Signal を書くと構築中にこの effect が再入し、
-        // 内側で構築した Component が外側の代入に上書きされてリークする。
-        // 黙って壊れる前に fail-fast する。
+        // If a factory writes a Signal that when reads, this effect re-enters
+        // during construction and the Component built on the inner call gets
+        // overwritten by the outer assignment and leaks.
+        // Fail fast instead of breaking silently.
         if (_rendering)
         {
             throw new InvalidOperationException(
-                "Show の child/fallback 構築中に when が読む Signal が書かれた (再入)。ファクトリ内でその Signal を書かないこと。");
+                "A Signal read by when was written while Show was building its child/fallback (re-entrancy). Do not write that Signal inside the factory.");
         }
         if (cond == _lastCond) return;
 
         _rendering = true;
         try
         {
-            // 先に新しい側を構築してから旧側を破棄する。ファクトリが throw しても
-            // 旧側が「Dispose 済みなのに表示されたまま」のゾンビにならない
-            // (_lastCond も未更新のままなので次の通知でリトライされる)。
+            // Build the new side before destroying the old one. If the factory
+            // throws, the old side never becomes a "Disposed but still
+            // displayed" zombie (and _lastCond is left unchanged, so the next
+            // notification retries).
             Component? next;
             if (cond)
             {
