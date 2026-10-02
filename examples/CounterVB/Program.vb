@@ -1,3 +1,5 @@
+' SPDX-License-Identifier: MIT
+
 Imports SolidCS
 Imports SolidCS.Avalonia
 

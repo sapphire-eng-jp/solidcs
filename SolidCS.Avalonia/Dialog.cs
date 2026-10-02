@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 namespace SolidCS.Avalonia;
 
 /// <summary>Extension filter for file dialogs. Patterns use the "*.txt" form.</summary>

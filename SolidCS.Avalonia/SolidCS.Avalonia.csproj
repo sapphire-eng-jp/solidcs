@@ -9,6 +9,8 @@
   <PropertyGroup>
     <Version>0.1.0</Version>
     <Authors>Kase Hiroyuki</Authors>
+    <Company>Sapphire ENG. Co., Ltd.</Company>
+    <Copyright>Copyright (c) 2026 Sapphire ENG. Co., Ltd.</Copyright>
     <Description>SolidJS-style reactive UI components for Avalonia, built on SolidCS. Compose desktop and browser (WebAssembly) UIs from plain C# — Signals drive Label, Button, TextBox, For, Show and more; no XAML.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/kasehiroyuki/SolidCS</PackageProjectUrl>

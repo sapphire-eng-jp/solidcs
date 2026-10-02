@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 import { dotnet } from './_framework/dotnet.js'
 
 const is_browser = typeof window != "undefined";

@@ -9,6 +9,8 @@
   <PropertyGroup>
     <Version>0.1.0</Version>
     <Authors>Kase Hiroyuki</Authors>
+    <Company>Sapphire ENG. Co., Ltd.</Company>
+    <Copyright>Copyright (c) 2026 Sapphire ENG. Co., Ltd.</Copyright>
     <Description>SolidJS-inspired reactive primitives (Signal / Effect) for C#. UI-framework-agnostic reactive core of SolidCS.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/kasehiroyuki/SolidCS</PackageProjectUrl>

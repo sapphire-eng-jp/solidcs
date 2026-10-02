@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 namespace SolidCS;
 
 public sealed class Effect(Action run) : IDisposable

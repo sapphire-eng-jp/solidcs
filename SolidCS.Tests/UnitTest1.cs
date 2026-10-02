@@ -1,4 +1,6 @@
-﻿namespace SolidCS.Tests;
+﻿// SPDX-License-Identifier: MIT
+
+namespace SolidCS.Tests;
 
 public class UnitTest1
 {

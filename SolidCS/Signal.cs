@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 namespace SolidCS;
 
 public sealed class Signal<T>(T initValue)
