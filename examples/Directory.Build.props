@@ -1,0 +1,8 @@
+<Project>
+
+  <!-- Samples are never packed; keeps `dotnet pack SolidCS.sln` library-only. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

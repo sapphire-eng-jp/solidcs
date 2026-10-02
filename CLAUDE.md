@@ -39,7 +39,12 @@ dotnet run --project examples/Autosave                     # Autosave サンプ�
 dotnet workload install wasm-tools                         # 初回のみ: CounterBrowser のビルドに必須 (ネイティブ再リンク)
 dotnet run --project examples/CounterBrowser               # ブラウザ (WASM) 版 Counter — dev サーバー起動 + ブラウザが開く
 dotnet publish examples/Counter -c Release                 # サンプルを AOT で発行
+dotnet pack SolidCS.sln -c Release -o artifacts/packages   # NuGet パッケージ作成 (SolidCS / SolidCS.Avalonia + snupkg)
 ```
+
+## NuGet パッケージング
+
+`SolidCS` / `SolidCS.Avalonia` の 2 つだけを pack する (version 0.1.0、MIT)。メタデータは各 csproj の PropertyGroup に直接書いてある (Directory.Build.props に共通化はしていない)。examples は `examples/Directory.Build.props` の `IsPackable=false` で、テストは自身の csproj で pack 対象外 — なのでソリューション全体の `dotnet pack` でライブラリ 2 つだけが出る。パッケージ README はリポジトリルートの `README.md` (英語) を両パッケージに同梱。`GenerateDocumentationFile` が有効なので `///` XML doc は IntelliSense に載る (未ドキュメントメンバーの CS1591 は NoWarn 済み)。コミットメッセージは 0c97019 以降**英語**で書く規約。
 
 ## コアアーキテクチャ
 

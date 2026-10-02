@@ -6,6 +6,27 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>Kase Hiroyuki</Authors>
+    <Description>SolidJS-style reactive UI components for Avalonia, built on SolidCS. Compose desktop and browser (WebAssembly) UIs from plain C# — Signals drive Label, Button, TextBox, For, Show and more; no XAML.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/kasehiroyuki/SolidCS</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kasehiroyuki/SolidCS</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>avalonia;gui;reactive;signals;solidjs;declarative-ui</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Not all public members have XML docs yet -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.18" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.18" />
