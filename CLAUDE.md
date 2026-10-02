@@ -140,7 +140,3 @@ static Component Counter()
 3. リアクティブに更新したいプロパティごとに `Context.Instance.RegisterEffect(() => _control.Prop = func())` を呼び、戻り値の `IDisposable` をフィールドに保持する。
 4. `GetControl()` で生成した Control を返す。
 5. `OnDispose()` (protected override) ですべての effect を解放する (コンテナ系の場合はさらに子へ `Dispose()` を伝播)。`Dispose()` 自体は基底の非仮想メソッドで、WithFont の effect 解放 → `OnDispose()` の順に呼ぶ。
-
-## 既知のゴミ
-
-- `SolidCS/Class1.cs` と `SolidCS.Tests/UnitTest1.cs` はテンプレートの残骸。触らなくてよいが、新規ファイル追加のサンプルとして参照しないこと。
