@@ -68,7 +68,8 @@ dotnet run --project examples/Todo        # dynamic lists (For/Show)
 dotnet run --project examples/CounterBrowser   # WebAssembly build (requires: dotnet workload install wasm-tools)
 ```
 
-`examples/CounterVB` shows the library used from VB.NET.
+`examples/CounterVB` and `examples/CounterFS` show the library used from
+VB.NET and F# respectively.
 
 ## Building
 
