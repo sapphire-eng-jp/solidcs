@@ -13,8 +13,8 @@
     <Copyright>Copyright (c) 2026 Sapphire ENG. Co., Ltd.</Copyright>
     <Description>SolidJS-inspired reactive primitives (Signal / Effect) for C#. UI-framework-agnostic reactive core of SolidCS.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/kasehiroyuki/SolidCS</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/kasehiroyuki/SolidCS</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/sapphire-eng-jp/solidcs</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sapphire-eng-jp/solidcs</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>reactive;signals;effects;solidjs;state-management</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
